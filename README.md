@@ -1,8 +1,13 @@
-[![Build Status](https://travis-ci.org/iotaledger/iri.svg?branch=dev)](https://travis-ci.org/iotaledger/iri)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/dba5b7ae42024718893991e767390135)](https://www.codacy.com/app/iotaledger/iri?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=iotaledger/iri&amp;utm_campaign=Badge_Grade)
-[![Codacy Badge](https://api.codacy.com/project/badge/Coverage/dba5b7ae42024718893991e767390135)](https://www.codacy.com/app/iotaledger/iri?utm_source=github.com&utm_medium=referral&utm_content=iotaledger/iri&utm_campaign=Badge_Coverage)
-![GitHub release](https://img.shields.io/github/release/iotaledger/iri.svg)
-![license](https://img.shields.io/github/license/iotaledger/iri.svg)
+[![Build Status](https://travis-ci.org/iotaledger/cliri.svg?branch=dev)](https://travis-ci.org/iotaledger/cliri)
+![GitHub release](https://img.shields.io/github/release/iotaledger/cliri.svg)
+![license](https://img.shields.io/github/license/iotaledger/cliri.svg)
+
+# CLIRI
+This project is a fork of [IRI](https://github.com/iotaledger/iri), with all Coordinator dependencies removed. It is meant for research purposes, and absolutely **not** ready for use on mainnet.
+
+We are managing this effort publicly here on GitHub, and we welcome community contributions.
+ 
+---
 
 ## IOTA
 
@@ -45,7 +50,7 @@ This page contains basic instructions for setting up an IRI node. You can find t
 
 The preferred option is that you compile yourself.
 The second option is that you utilize the provided jar, 
-which is released whenever there is a new update here: [Github Releases](https://github.com/iotaledger/iri/releases).
+which is released whenever there is a new update here: [Github Releases](https://github.com/iotaledger/cliri/releases).
 
 ### Compiling yourself  
 
@@ -53,8 +58,8 @@ Make sure to have Maven and Java 8 installed on your computer.
 
 #### To compile & package
 ```
-$ git clone https://github.com/iotaledger/iri
-$ cd iri
+$ git clone https://github.com/iotaledger/cliri
+$ cd cliri
 $ mvn clean compile
 $ mvn package
 ```
