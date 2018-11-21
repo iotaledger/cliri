@@ -11,9 +11,9 @@
     <description>IOTA Reference Implementation</description>
 
     <scm>
-        <url>https://github.com/iotaledger/iri/</url>
-        <connection>scm:git:git://github.com/iotaledger/iri.git</connection>
-        <developerConnection>scm:git:git@github.com/iotaledger/iri.git</developerConnection>
+        <url>https://github.com/iotaledger/cliri/</url>
+        <connection>scm:git:git://github.com/iotaledger/cliri.git</connection>
+        <developerConnection>scm:git:git@github.com/iotaledger/cliri.git</developerConnection>
     </scm>
 
     <properties>

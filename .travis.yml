@@ -65,7 +65,7 @@ deploy:
   deploy: mvn package -P build-extras -Dlogging-level=INFO
   on:
     tags: true
-    repo: iotaledger/iri
+    repo: iotaledger/cliri
     branch:
     - master
 env:
