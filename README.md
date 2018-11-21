@@ -4,6 +4,13 @@
 ![GitHub release](https://img.shields.io/github/release/iotaledger/iri.svg)
 ![license](https://img.shields.io/github/license/iotaledger/iri.svg)
 
+# CLIRI
+This project is a fork of [IRI](https://github.com/iotaledger/iri), with all Coordinator dependencies removed. It is meant for research purposes, and absolutely **not** ready for use on mainnet.
+
+We are managing this effort publicly here on GitHub, and we welcome community contributions.
+ 
+---
+
 ## IOTA
 
 The IRI repository is the main IOTA Reference Implementation and the embodiment of the IOTA network specification. 
