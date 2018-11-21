@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.util.Properties;
 
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 /**
@@ -103,29 +102,6 @@ public class ConfigFactoryTest {
         IotaConfig iotaConfig = ConfigFactory.createFromFile(configFile, false);
         assertTrue("Expected iotaConfig as instance of MainnetConfig.", iotaConfig instanceof MainnetConfig);
         assertFalse("Expected iotaConfig as Mainnet.", iotaConfig.isTestnet());
-    }
-
-    /**
-     * Test if leading and trailing spaces are trimmed from string in properties file.
-     * @throws IOException when config file not found.
-     */
-    @Test
-    public void createFromFileTestnetWithTrailingSpaces() throws IOException {
-        File configFile = createTestnetConfigFile("true");
-        IotaConfig iotaConfig = ConfigFactory.createFromFile(configFile, true);
-        String expected = "NPCRMHDOMU9QHFFBKFCWFHFJNNQDRNDOGVPEVDVGWKHFUFEXLWJBHXDJFKQGYFRDZBQIFDSJMUCCQVICI";
-        assertEquals("Expected that leading and trailing spaces were trimmed.", expected, iotaConfig.getCoordinator());
-    }
-
-    /**
-     * Test if trailing spaces are correctly trimmed from integer.
-     * @throws IOException when config file not found.
-     */
-    @Test
-    public void createFromFileTestnetWithInteger() throws IOException {
-        File configFile = createTestnetConfigFile("true");
-        IotaConfig iotaConfig = ConfigFactory.createFromFile(configFile, true);
-        assertEquals("Expected that trailing spaces are trimmed.", 2, iotaConfig.getMilestoneStartIndex());
     }
 
     /**

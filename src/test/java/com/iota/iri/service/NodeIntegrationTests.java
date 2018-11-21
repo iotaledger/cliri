@@ -2,15 +2,11 @@ package com.iota.iri.service;
 
 import com.iota.iri.IXI;
 import com.iota.iri.Iota;
-
-import static com.iota.iri.controllers.TransactionViewModel.*;
-
-import com.iota.iri.conf.*;
+import com.iota.iri.conf.IXIConfig;
+import com.iota.iri.conf.TestnetConfig;
 import com.iota.iri.crypto.Curl;
 import com.iota.iri.crypto.Sponge;
 import com.iota.iri.crypto.SpongeFactory;
-import com.iota.iri.model.Hash;
-import com.iota.iri.model.HashFactory;
 import com.iota.iri.network.Node;
 import com.iota.iri.utils.Converter;
 import org.apache.commons.lang3.ArrayUtils;
@@ -18,9 +14,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.rules.TemporaryFolder;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
+
+import static com.iota.iri.controllers.TransactionViewModel.*;
 
 public class NodeIntegrationTests {
 
@@ -58,12 +56,10 @@ public class NodeIntegrationTests {
         Node.uri("udp://localhost:14701").ifPresent(uri -> iotaNodes[0].node.addNeighbor(iotaNodes[0].node.newNeighbor(uri, true)));
         //Node.uri("udp://localhost:14700").ifPresent(uri -> iotaNodes[1].node.addNeighbor(iotaNodes[1].node.newNeighbor(uri, true)));
 
-        cooThread = new Thread(spawnCoordinator(api[0], spacing), "Coordinator");
         master = new Thread(spawnMaster(), "master");
         /*
         TODO: Put some test stuff here
          */
-        cooThread.start();
         master.start();
 
         synchronized (waitObj) {
@@ -106,46 +102,6 @@ public class NodeIntegrationTests {
                 waitObj.notifyAll();
             }
         };
-    }
-
-    Runnable spawnCoordinator(API api, long spacing) {
-        return () -> {
-            long index = 0;
-            try {
-                newMilestone(api, Arrays.asList(Hash.NULL_HASH, Hash.NULL_HASH), index++);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            while(!shutdown.get()) {
-                try {
-                    Thread.sleep(spacing);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                try {
-                    sendMilestone(api, index++);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        };
-    }
-
-    private void sendMilestone(API api, long index) throws Exception {
-        newMilestone(api, api.getTransactionToApproveTips(10, Optional.empty()), index);
-    }
-
-    private void newMilestone(API api, List<Hash> tips, long index) throws Exception {
-        List<byte[]> transactions = new ArrayList<>();
-        transactions.add(new byte[TRINARY_SIZE]);
-        Converter.copyTrits(index, transactions.get(0), OBSOLETE_TAG_TRINARY_OFFSET, OBSOLETE_TAG_TRINARY_SIZE);
-        transactions.add(Arrays.copyOf(transactions.get(0), TRINARY_SIZE));
-        Hash coordinator = HashFactory.ADDRESS.create(new TestnetConfig().getCoordinator());
-        System.arraycopy(coordinator.trits(), 0, transactions.get(0), ADDRESS_TRINARY_OFFSET, ADDRESS_TRINARY_SIZE);
-        setBundleHash(transactions, null);
-        List<String> elements = api.attachToTangleStatement(tips.get(0), tips.get(0), 13, transactions.stream().map(Converter::trytes).collect(Collectors.toList()));
-        api.storeTransactionsStatement(elements);
-        api.broadcastTransactionsStatement(elements);
     }
 
     public void setBundleHash(List<byte[]> transactions, Curl customCurl) {

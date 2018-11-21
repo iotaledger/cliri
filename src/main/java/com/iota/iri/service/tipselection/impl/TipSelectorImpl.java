@@ -1,7 +1,6 @@
 package com.iota.iri.service.tipselection.impl;
 
 import com.iota.iri.LedgerValidator;
-import com.iota.iri.MilestoneTracker;
 import com.iota.iri.conf.TipSelConfig;
 import com.iota.iri.model.Hash;
 import com.iota.iri.model.HashId;
@@ -30,7 +29,6 @@ public class TipSelectorImpl implements TipSelector {
 
     private final LedgerValidator ledgerValidator;
     private final Tangle tangle;
-    private final MilestoneTracker milestoneTracker;
     private final TipSelConfig config;
 
     public TipSelectorImpl(Tangle tangle,
@@ -38,7 +36,6 @@ public class TipSelectorImpl implements TipSelector {
                            EntryPointSelector entryPointSelector,
                            RatingCalculator ratingCalculator,
                            Walker walkerAlpha,
-                           MilestoneTracker milestoneTracker,
                            TipSelConfig config) {
 
         this.entryPointSelector = entryPointSelector;
@@ -49,7 +46,6 @@ public class TipSelectorImpl implements TipSelector {
         //used by walkValidator
         this.ledgerValidator = ledgerValidator;
         this.tangle = tangle;
-        this.milestoneTracker = milestoneTracker;
         this.config = config;
     }
 
@@ -71,37 +67,32 @@ public class TipSelectorImpl implements TipSelector {
      */
     @Override
     public List<Hash> getTransactionsToApprove(int depth, Optional<Hash> reference) throws Exception {
-        try {
-            milestoneTracker.latestSnapshot.rwlock.readLock().lock();
 
-            //preparation
-            Hash entryPoint = entryPointSelector.getEntryPoint(depth);
-            UnIterableMap<HashId, Integer> rating = ratingCalculator.calculate(entryPoint);
+        //preparation
+        Hash entryPoint = entryPointSelector.getEntryPoint(depth);
+        UnIterableMap<HashId, Integer> rating = ratingCalculator.calculate(entryPoint);
 
-            //random walk
-            List<Hash> tips = new LinkedList<>();
-            WalkValidator walkValidator = new WalkValidatorImpl(tangle, ledgerValidator, milestoneTracker, config);
-            Hash tip = walker.walk(entryPoint, rating, walkValidator);
-            tips.add(tip);
+        //random walk
+        List<Hash> tips = new LinkedList<>();
+        WalkValidator walkValidator = new WalkValidatorImpl(tangle, ledgerValidator, config);
+        Hash tip = walker.walk(entryPoint, rating, walkValidator);
+        tips.add(tip);
 
-            if (reference.isPresent()) {
-                checkReference(reference.get(), rating);
-                entryPoint = reference.get();
-            }
-
-            //passing the same walkValidator means that the walks will be consistent with each other
-            tip = walker.walk(entryPoint, rating, walkValidator);
-            tips.add(tip);
-
-            //validate
-            if (!ledgerValidator.checkConsistency(tips)) {
-                throw new IllegalStateException(TIPS_NOT_CONSISTENT);
-            }
-
-            return tips;
-        } finally {
-            milestoneTracker.latestSnapshot.rwlock.readLock().unlock();
+        if (reference.isPresent()) {
+            checkReference(reference.get(), rating);
+            entryPoint = reference.get();
         }
+
+        //passing the same walkValidator means that the walks will be consistent with each other
+        tip = walker.walk(entryPoint, rating, walkValidator);
+        tips.add(tip);
+
+        //validate
+        if (!ledgerValidator.checkConsistency(tips)) {
+            throw new IllegalStateException(TIPS_NOT_CONSISTENT);
+        }
+
+        return tips;
     }
 
     private void checkReference(HashId reference, UnIterableMap<HashId, Integer> rating)

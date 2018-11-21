@@ -104,8 +104,6 @@ public class ConfigTest {
         Assert.assertEquals("db path", "/db", iotaConfig.getDbPath());
         Assert.assertEquals("zmq enabled", true, iotaConfig.isZmqEnabled());
         Assert.assertNotEquals("mwm", 4, iotaConfig.getMwm());
-        Assert.assertNotEquals("coo", iotaConfig.getCoordinator(), "TTTTTTTTT");
-        Assert.assertEquals("--testnet-no-coo-validation", false, iotaConfig.isDontValidateTestnetMilestoneSig());
     }
 
     @Test
@@ -172,9 +170,6 @@ public class ConfigTest {
         Assert.assertEquals("db path", "/db", iotaConfig.getDbPath());
         Assert.assertEquals("zmq enabled", true, iotaConfig.isZmqEnabled());
         Assert.assertEquals("mwm", 4, iotaConfig.getMwm());
-        Assert.assertEquals("coo", "TTTTTTTTT", iotaConfig.getCoordinator());
-        Assert.assertEquals("--testnet-no-coo-validation", true,
-                iotaConfig.isDontValidateTestnetMilestoneSig());
     }
 
     @Test
@@ -242,10 +237,8 @@ public class ConfigTest {
         Assert.assertEquals("REVALIDATE", false, iotaConfig.isRevalidate());
         Assert.assertEquals("P_REMOVE_REQUEST", 0.4d, iotaConfig.getpRemoveRequest(), 0);
         Assert.assertEquals("MWM", 4, iotaConfig.getMwm());
-        Assert.assertEquals("NUMBER_OF_KEYS_IN_A_MILESTONE", 3, iotaConfig.getNumberOfKeysInMilestone());
         Assert.assertEquals("TIPSELECTION_ALPHA", 1.1d, iotaConfig.getAlpha(), 0);
-        Assert.assertEquals("DONT_VALIDATE_TESTNET_MILESTONE_SIG",
-                iotaConfig.isDontValidateTestnetMilestoneSig(), true);
+
         //prove that REMOTE did nothing
         Assert.assertEquals("API_HOST", iotaConfig.getApiHost(), "localhost");
     }
@@ -275,13 +268,6 @@ public class ConfigTest {
                         "MIN_RANDOM_WALKS", "MAX_RANDOM_WALKS"}, config))
                 .forEach(config ->
                         Assert.assertThat(configNames, IsCollectionContaining.hasItem(config)));
-    }
-
-    @Test
-    public void testDontValidateMIlestoneSigDefaultValue() {
-        IotaConfig iotaConfig = ConfigFactory.createIotaConfig(true);
-        Assert.assertFalse("By default testnet should be validating milestones",
-                iotaConfig.isDontValidateTestnetMilestoneSig());
     }
 
     private String deriveNameFromSetter(Method setter) {
@@ -328,8 +314,6 @@ public class ConfigTest {
         MAX_PEERS,
         DNS_RESOLUTION_ENABLED,
         DNS_REFRESHER_ENABLED,
-        COORDINATOR,
-        DONT_VALIDATE_TESTNET_MILESTONE_SIG,
         REVALIDATE,
         RESCAN_DB,
         MIN_RANDOM_WALKS,
@@ -347,13 +331,8 @@ public class ConfigTest {
         Q_SIZE_NODE,
         P_DROP_CACHE_ENTRY,
         CACHE_SIZE_BYTES,
-        SNAPSHOT_FILE,
-        SNAPSHOT_SIGNATURE_FILE,
-        MILESTONE_START_INDEX,
-        NUMBER_OF_KEYS_IN_A_MILESTONE,
         TRANSACTION_PACKET_SIZE,
         REQUEST_HASH_SIZE,
-        SNAPSHOT_TIME,
         TIPSELECTION_ALPHA,
         BELOW_MAX_DEPTH_TRANSACTION_LIMIT,
     }

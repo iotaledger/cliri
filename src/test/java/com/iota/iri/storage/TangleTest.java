@@ -2,18 +2,20 @@ package com.iota.iri.storage;
 
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.crypto.SpongeFactory;
+import com.iota.iri.model.Hash;
 import com.iota.iri.model.TransactionHash;
 import com.iota.iri.model.persistables.Tag;
 import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
+import com.iota.iri.utils.Converter;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
 public class TangleTest {
     private final TemporaryFolder dbFolder = new TemporaryFolder();
@@ -21,6 +23,7 @@ public class TangleTest {
     private Tangle tangle = new Tangle();
 
     private static final Random seed = new Random();
+    Logger log = LoggerFactory.getLogger(Tangle.class);
 
     @Before
     public void setUp() throws Exception {

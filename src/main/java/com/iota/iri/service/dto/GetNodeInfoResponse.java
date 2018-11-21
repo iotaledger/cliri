@@ -1,6 +1,5 @@
 package com.iota.iri.service.dto;
 
-import com.iota.iri.model.Hash;
 import com.iota.iri.service.API;
 import com.iota.iri.service.Feature;
 
@@ -46,35 +45,7 @@ public class GetNodeInfoResponse extends AbstractResponse {
      * The total amount of memory in the Java virtual machine.
      */
     private long jreTotalMemory;
-    
-    /**
-     * The hash of the latest transaction that was signed off by the coordinator.
-     */
-    private String latestMilestone;
-    
-    /**
-     * Index of the {@link #latestMilestone}
-     */
-    private int latestMilestoneIndex;
-    
-    /**
-     * The hash of the latest transaction which is solid and is used for sending transactions. 
-     * For a milestone to become solid, your local node must approve the subtangle of coordinator-approved transactions, 
-     *  and have a consistent view of all referenced transactions.
-     */
-    private String latestSolidSubtangleMilestone;
-    
-    /**
-     * Index of the {@link #latestSolidSubtangleMilestone}
-     */
-    private int latestSolidSubtangleMilestoneIndex;
-    
-    /**
-     * The start index of the milestones. 
-     * This index is encoded in each milestone transaction by the coordinator
-     */
-    private int milestoneStartIndex;
-    
+
     /**
      * Number of neighbors this node is directly connected with.
      */
@@ -111,11 +82,6 @@ public class GetNodeInfoResponse extends AbstractResponse {
      * This list will contain all the names of the features of a node as specified in {@link Feature}.
      */
     private String[] features;
-    
-    /**
-     * The address of the Coordinator being followed by this node.
-     */
-    private String coordinatorAddress;
 
     /**
      * Creates a new {@link GetNodeInfoResponse}
@@ -127,25 +93,18 @@ public class GetNodeInfoResponse extends AbstractResponse {
      * @param jreVersion {@link #jreVersion}
      * @param maxMemory {@link #jreMaxMemory}
      * @param totalMemory {@link #jreTotalMemory}
-     * @param latestMilestone {@link #latestMilestone}
-     * @param latestMilestoneIndex {@link #latestMilestoneIndex}
-     * @param latestSolidSubtangleMilestone {@link #latestSolidSubtangleMilestone}
-     * @param latestSolidSubtangleMilestoneIndex {@link #latestSolidSubtangleMilestoneIndex}
-     * @param milestoneStartIndex {@link #milestoneStartIndex}
      * @param neighbors {@link #neighbors}
      * @param packetsQueueSize {@link #packetsQueueSize}
      * @param currentTimeMillis {@link #time}
      * @param tips {@link #tips}
      * @param numberOfTransactionsToRequest {@link #transactionsToRequest}
      * @param features {@link #features}
-     * @param coordinatorAddress {@link #coordinatorAddress}
      * @return a {@link GetNodeInfoResponse} filled with all the provided parameters
      */
 	public static AbstractResponse create(String appName, String appVersion, int jreAvailableProcessors, long jreFreeMemory,
-	        String jreVersion, long maxMemory, long totalMemory, Hash latestMilestone, int latestMilestoneIndex,
-	        Hash latestSolidSubtangleMilestone, int latestSolidSubtangleMilestoneIndex, int milestoneStartIndex,
-	        int neighbors, int packetsQueueSize, long currentTimeMillis, int tips, 
-	        int numberOfTransactionsToRequest,  String[] features, String coordinatorAddress) {
+										  String jreVersion, long maxMemory, long totalMemory,
+										  int neighbors, int packetsQueueSize, long currentTimeMillis, int tips,
+										  int numberOfTransactionsToRequest, String[] features) {
 		final GetNodeInfoResponse res = new GetNodeInfoResponse();
 		res.appName = appName;
 		res.appVersion = appVersion;
@@ -155,13 +114,6 @@ public class GetNodeInfoResponse extends AbstractResponse {
 
 		res.jreMaxMemory = maxMemory;
 		res.jreTotalMemory = totalMemory;
-		res.latestMilestone = latestMilestone.toString();
-		res.latestMilestoneIndex = latestMilestoneIndex;
-
-		res.latestSolidSubtangleMilestone = latestSolidSubtangleMilestone.toString();
-		res.latestSolidSubtangleMilestoneIndex = latestSolidSubtangleMilestoneIndex;
-
-		res.milestoneStartIndex = milestoneStartIndex;
 
 		res.neighbors = neighbors;
 		res.packetsQueueSize = packetsQueueSize;
@@ -170,7 +122,6 @@ public class GetNodeInfoResponse extends AbstractResponse {
 		res.transactionsToRequest = numberOfTransactionsToRequest;
 		
 		res.features = features;
-		res.coordinatorAddress = coordinatorAddress;
 		return res;
 	}
 
@@ -231,46 +182,6 @@ public class GetNodeInfoResponse extends AbstractResponse {
 	}
 
     /**
-     * 
-     * @return {@link #latestMilestone}
-     */
-	public String getLatestMilestone() {
-		return latestMilestone;
-	}
-
-    /**
-     * 
-     * @return {@link #latestMilestoneIndex}
-     */
-	public int getLatestMilestoneIndex() {
-		return latestMilestoneIndex;
-	}
-
-    /**
-     * 
-     * @return {@link #latestSolidSubtangleMilestone}
-     */
-	public String getLatestSolidSubtangleMilestone() {
-		return latestSolidSubtangleMilestone;
-	}
-
-    /**
-     * 
-     * @return {@link #latestSolidSubtangleMilestoneIndex}
-     */
-	public int getLatestSolidSubtangleMilestoneIndex() {
-		return latestSolidSubtangleMilestoneIndex;
-	}
-
-    /**
-     *
-     * @return {@link #milestoneStartIndex}
-     */
-	public int getMilestoneStartIndex() {
-		return milestoneStartIndex;
-	}
-
-    /**
      *
      * @return {@link #neighbors}
      */
@@ -316,13 +227,5 @@ public class GetNodeInfoResponse extends AbstractResponse {
 	 */
 	public String[] getFeatures() {
 	    return features;
-	}
-
-	/**
-	 * 
-	 * @return {@link #coordinatorAddress}
-	 */
-	public String getCoordinatorAddress() {
-		return coordinatorAddress;
 	}
 }

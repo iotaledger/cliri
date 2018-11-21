@@ -1,7 +1,6 @@
 package com.iota.iri.service.tipselection.impl;
 
 import com.iota.iri.LedgerValidator;
-import com.iota.iri.MilestoneTracker;
 import com.iota.iri.conf.TipSelConfig;
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.Hash;
@@ -29,7 +28,6 @@ public class WalkValidatorImpl implements WalkValidator {
     private final Tangle tangle;
     private final Logger log = LoggerFactory.getLogger(WalkValidator.class);
     private final LedgerValidator ledgerValidator;
-    private final MilestoneTracker milestoneTracker;
     private final TipSelConfig config;
 
 
@@ -37,10 +35,9 @@ public class WalkValidatorImpl implements WalkValidator {
     private Map<Hash, Long> myDiff;
     private Set<Hash> myApprovedHashes;
 
-    public WalkValidatorImpl(Tangle tangle, LedgerValidator ledgerValidator, MilestoneTracker milestoneTracker, TipSelConfig config) {
+    public WalkValidatorImpl(Tangle tangle, LedgerValidator ledgerValidator, TipSelConfig config) {
         this.tangle = tangle;
         this.ledgerValidator = ledgerValidator;
-        this.milestoneTracker = milestoneTracker;
         this.config = config;
 
         maxDepthOkMemoization = new HashSet<>();
@@ -61,8 +58,9 @@ public class WalkValidatorImpl implements WalkValidator {
         } else if (!transactionViewModel.isSolid()) {
             log.debug("Validation failed: {} is not solid", transactionHash);
             return false;
+            //TODO-CLIRI remove belowMaxDepth, currently set to never trigger.
         } else if (belowMaxDepth(transactionViewModel.getHash(),
-                milestoneTracker.latestSolidSubtangleMilestoneIndex - config.getMaxDepth())) {
+                0 - config.getMaxDepth())) {
             log.debug("Validation failed: {} is below max depth", transactionHash);
             return false;
         } else if (!ledgerValidator.updateDiff(myApprovedHashes, myDiff, transactionViewModel.getHash())) {

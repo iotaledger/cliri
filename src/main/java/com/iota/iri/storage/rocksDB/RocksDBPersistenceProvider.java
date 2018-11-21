@@ -4,7 +4,6 @@ import com.iota.iri.model.*;
 import com.iota.iri.model.persistables.Address;
 import com.iota.iri.model.persistables.Approvee;
 import com.iota.iri.model.persistables.Bundle;
-import com.iota.iri.model.persistables.Milestone;
 import com.iota.iri.model.persistables.ObsoleteTag;
 import com.iota.iri.model.persistables.Tag;
 import com.iota.iri.model.persistables.Transaction;
@@ -95,8 +94,6 @@ public class RocksDBPersistenceProvider implements PersistenceProvider {
     private void initClassTreeMap() {
         Map<Class<?>, ColumnFamilyHandle> classMap = new LinkedHashMap<>();
         classMap.put(Transaction.class, transactionHandle);
-        classMap.put(Milestone.class, milestoneHandle);
-        classMap.put(StateDiff.class, stateDiffHandle);
         classMap.put(Address.class, addressHandle);
         classMap.put(Approvee.class, approveeHandle);
         classMap.put(Bundle.class, bundleHandle);

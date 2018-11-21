@@ -4,7 +4,6 @@ import com.iota.iri.conf.IotaConfig;
 import com.iota.iri.conf.TipSelConfig;
 import com.iota.iri.controllers.TipsViewModel;
 import com.iota.iri.controllers.TransactionViewModel;
-import com.iota.iri.crypto.SpongeFactory;
 import com.iota.iri.network.Node;
 import com.iota.iri.network.TransactionRequester;
 import com.iota.iri.network.UDPReceiver;
@@ -16,7 +15,7 @@ import com.iota.iri.service.tipselection.TailFinder;
 import com.iota.iri.service.tipselection.TipSelector;
 import com.iota.iri.service.tipselection.Walker;
 import com.iota.iri.service.tipselection.impl.CumulativeWeightCalculator;
-import com.iota.iri.service.tipselection.impl.EntryPointSelectorImpl;
+import com.iota.iri.service.tipselection.impl.EntryPointSelectorGenesisImpl;
 import com.iota.iri.service.tipselection.impl.TailFinderImpl;
 import com.iota.iri.service.tipselection.impl.TipSelectorImpl;
 import com.iota.iri.service.tipselection.impl.WalkerAlpha;
@@ -71,7 +70,6 @@ public class Iota {
     private static final Logger log = LoggerFactory.getLogger(Iota.class);
 
     public final LedgerValidator ledgerValidator;
-    public final MilestoneTracker milestoneTracker;
     public final Tangle tangle;
     public final TransactionValidator transactionValidator;
     public final TipsSolidifier tipsSolidifier;
@@ -93,19 +91,16 @@ public class Iota {
      */
     public Iota(IotaConfig configuration) throws IOException {
         this.configuration = configuration;
-        Snapshot initialSnapshot = Snapshot.init(configuration).clone();
         tangle = new Tangle();
         messageQ = MessageQ.createWith(configuration);
         tipsViewModel = new TipsViewModel();
         transactionRequester = new TransactionRequester(tangle, messageQ);
-        transactionValidator = new TransactionValidator(tangle, tipsViewModel, transactionRequester,
-                configuration);
-        milestoneTracker = new MilestoneTracker(tangle, transactionValidator, messageQ, initialSnapshot, configuration);
-        node = new Node(tangle, transactionValidator, transactionRequester, tipsViewModel, milestoneTracker, messageQ,
+        transactionValidator = new TransactionValidator(tangle, tipsViewModel, transactionRequester);
+        node = new Node(tangle, transactionValidator, transactionRequester, tipsViewModel, messageQ,
                 configuration);
         replicator = new Replicator(node, configuration);
         udpReceiver = new UDPReceiver(node, configuration);
-        ledgerValidator = new LedgerValidator(tangle, milestoneTracker, transactionRequester, messageQ);
+        ledgerValidator = new LedgerValidator(tangle, transactionRequester, messageQ);
         tipsSolidifier = new TipsSolidifier(tangle, transactionValidator, tipsViewModel);
         tipsSelector = createTipSelector(configuration);
     }
@@ -127,11 +122,8 @@ public class Iota {
         }
 
         if (configuration.isRevalidate()) {
-            tangle.clearColumn(com.iota.iri.model.persistables.Milestone.class);
-            tangle.clearColumn(com.iota.iri.model.StateDiff.class);
             tangle.clearMetadata(com.iota.iri.model.persistables.Transaction.class);
         }
-        milestoneTracker.init(SpongeFactory.Mode.CURLP27, 1, ledgerValidator);
         transactionValidator.init(configuration.isTestnet(), configuration.getMwm());
         tipsSolidifier.init();
         transactionRequester.init(configuration.getpRemoveRequest());
@@ -147,8 +139,6 @@ public class Iota {
         tangle.clearColumn(com.iota.iri.model.persistables.Approvee.class);
         tangle.clearColumn(com.iota.iri.model.persistables.ObsoleteTag.class);
         tangle.clearColumn(com.iota.iri.model.persistables.Tag.class);
-        tangle.clearColumn(com.iota.iri.model.persistables.Milestone.class);
-        tangle.clearColumn(com.iota.iri.model.StateDiff.class);
         tangle.clearMetadata(com.iota.iri.model.persistables.Transaction.class);
 
         //rescan all tx & refill the columns
@@ -170,7 +160,6 @@ public class Iota {
      * Exceptions during shutdown are not caught.
      */
     public void shutdown() throws Exception {
-        milestoneTracker.shutDown();
         tipsSolidifier.shutdown();
         node.shutdown();
         udpReceiver.shutdown();
@@ -199,11 +188,11 @@ public class Iota {
     }
 
     private TipSelector createTipSelector(TipSelConfig config) {
-        EntryPointSelector entryPointSelector = new EntryPointSelectorImpl(tangle, milestoneTracker);
+        EntryPointSelector entryPointSelector = new EntryPointSelectorGenesisImpl();
         RatingCalculator ratingCalculator = new CumulativeWeightCalculator(tangle);
         TailFinder tailFinder = new TailFinderImpl(tangle);
         Walker walker = new WalkerAlpha(tailFinder, tangle, messageQ, new SecureRandom(), config);
         return new TipSelectorImpl(tangle, ledgerValidator, entryPointSelector, ratingCalculator,
-                walker, milestoneTracker, config);
+                walker, config);
     }
 }
