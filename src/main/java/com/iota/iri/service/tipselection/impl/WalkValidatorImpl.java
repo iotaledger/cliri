@@ -18,7 +18,6 @@ import java.util.*;
  *      <ol>
  *      <li>it is a tail
  *      <li>all the history of the transaction is present (is solid)
- *      <li>it does not reference an old unconfirmed transaction (not belowMaxDepth)
  *      <li>the ledger is still consistent if the transaction is added
  *          (balances of all addresses are correct and all signatures are valid)
  *      </ol>
@@ -28,15 +27,13 @@ public class WalkValidatorImpl implements WalkValidator {
     private final Tangle tangle;
     private final Logger log = LoggerFactory.getLogger(WalkValidator.class);
     private final LedgerValidator ledgerValidator;
-    private final TipSelConfig config;
 
     private Map<Hash, Long> myDiff;
     private Set<Hash> myApprovedHashes;
 
-    public WalkValidatorImpl(Tangle tangle, LedgerValidator ledgerValidator, TipSelConfig config) {
+    public WalkValidatorImpl(Tangle tangle, LedgerValidator ledgerValidator) {
         this.tangle = tangle;
         this.ledgerValidator = ledgerValidator;
-        this.config = config;
 
         myDiff = new HashMap<>();
         myApprovedHashes = new HashSet<>();
@@ -59,17 +56,10 @@ public class WalkValidatorImpl implements WalkValidator {
         } else if (!transactionViewModel.isSolid()) {
             log.debug("Validation failed: {} is not solid", transactionHash);
             return false;
-        } else if (belowMaxDepth(transactionViewModel.getHash())) {
-            log.debug("Validation failed: {} is below max depth", transactionHash);
-            return false;
         } else if (!ledgerValidator.updateDiff(myApprovedHashes, myDiff, transactionViewModel.getHash())) {
             log.debug("Validation failed: {} is not consistent", transactionHash);
             return false;
         }
         return true;
-    }
-
-    private boolean belowMaxDepth(Hash tip) throws Exception {
-        return false;
     }
 }

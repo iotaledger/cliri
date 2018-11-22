@@ -60,21 +60,20 @@ public class TipSelectorImpl implements TipSelector {
      *     otherwise start again from <CODE>entryPoint</CODE>.
      * <li><b>Validate:</b> check that both tips are not contradicting.
      * </ol>
-     * @param depth  The depth that the transactions will be found from.
      * @param reference  An optional transaction hash to be referenced by tips.
      * @return  Transactions to approve
      * @throws Exception If DB fails to retrieve transactions
      */
     @Override
-    public List<Hash> getTransactionsToApprove(int depth, Optional<Hash> reference) throws Exception {
+    public List<Hash> getTransactionsToApprove(Optional<Hash> reference) throws Exception {
 
         //preparation
-        Hash entryPoint = entryPointSelector.getEntryPoint(depth);
+        Hash entryPoint = entryPointSelector.getEntryPoint();
         UnIterableMap<HashId, Integer> rating = ratingCalculator.calculate(entryPoint);
 
         //random walk
         List<Hash> tips = new LinkedList<>();
-        WalkValidator walkValidator = new WalkValidatorImpl(tangle, ledgerValidator, config);
+        WalkValidator walkValidator = new WalkValidatorImpl(tangle, ledgerValidator);
         Hash tip = walker.walk(entryPoint, rating, walkValidator);
         tips.add(tip);
 

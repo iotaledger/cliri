@@ -75,9 +75,7 @@ public abstract class BaseIotaConfig implements IotaConfig {
 
 
     //Tip Selection
-    protected int maxDepth = Defaults.MAX_DEPTH;
     protected double alpha = Defaults.ALPHA;
-    private int maxAnalyzedTransactions = Defaults.MAX_ANALYZED_TXS;
 
     //PearlDiver
     protected int powThreads = Defaults.POW_THREADS;
@@ -509,17 +507,6 @@ public abstract class BaseIotaConfig implements IotaConfig {
     }
 
     @Override
-    public int getMaxDepth() {
-        return maxDepth;
-    }
-
-    @JsonProperty
-    @Parameter(names = "--max-depth", description = TipSelConfig.Descriptions.MAX_DEPTH)
-    protected void setMaxDepth(int maxDepth) {
-        this.maxDepth = maxDepth;
-    }
-
-    @Override
     public double getAlpha() {
         return alpha;
     }
@@ -528,17 +515,6 @@ public abstract class BaseIotaConfig implements IotaConfig {
     @Parameter(names = "--alpha", description = TipSelConfig.Descriptions.ALPHA)
     protected void setAlpha(double alpha) {
         this.alpha = alpha;
-    }
-
-    @Override
-    public int getBelowMaxDepthTransactionLimit() {
-        return maxAnalyzedTransactions;
-    }
-
-    @JsonProperty
-    @Parameter(names = "--max-analyzed-transactions", description = TipSelConfig.Descriptions.BELOW_MAX_DEPTH_TRANSACTION_LIMIT)
-    protected void setBelowMaxDepthTransactionLimit(int maxAnalyzedTransactions) {
-        this.maxAnalyzedTransactions = maxAnalyzedTransactions;
     }
 
     @Override
@@ -605,9 +581,7 @@ public abstract class BaseIotaConfig implements IotaConfig {
         int ZMQ_PORT = 5556;
 
         //TipSel
-        int MAX_DEPTH = 15;
         double ALPHA = 0.001d;
-        int MAX_ANALYZED_TXS = 20_000;
 
         //PearlDiver
         int POW_THREADS = 0;

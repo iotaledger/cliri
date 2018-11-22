@@ -422,9 +422,8 @@ public class API {
                     Optional<Hash> reference = request.containsKey("reference") ?
                         Optional.of(HashFactory.TRANSACTION.create(getParameterAsStringAndValidate(request,"reference", HASH_SIZE)))
                         : Optional.empty();
-                    int depth = getParameterAsInt(request, "depth");
 
-                    return getTransactionsToApproveStatement(depth, reference);
+                    return getTransactionsToApproveStatement(reference);
                 }
                 case "getTrytes": {
                     final List<String> hashes = getParameterAsList(request,"hashes", HASH_SIZE);
@@ -663,24 +662,15 @@ public class API {
 
     /**
       * Tip selection which returns <tt>trunkTransaction</tt> and <tt>branchTransaction</tt>.
-      * The input value <tt>depth</tt> determines how many milestones to go back for finding the transactions to approve.
-      * The higher your <tt>depth</tt> value, the more work you have to do as you are confirming more transactions.
-      * If the <tt>depth</tt> is too large (usually above 15, it depends on the node's configuration) an error will be returned.
       * The <tt>reference</tt> is an optional hash of a transaction you want to approve.
-      * If it can't be found at the specified <tt>depth</tt> then an error will be returned.
       *
-      * @param depth Number of bundles to go back to determine the transactions for approval.
       * @param reference Hash of transaction to start random-walk from, used to make sure the tips returned reference a given transaction in their past.
       * @return {@link com.iota.iri.service.dto.GetTransactionsToApproveResponse}
       * @throws Exception When tip selection has failed. Currently caught and returned as an {@link ErrorResponse}.
       **/
-    private synchronized AbstractResponse getTransactionsToApproveStatement(int depth, Optional<Hash> reference) throws Exception {
-        if (depth < 0 || depth > instance.configuration.getMaxDepth()) {
-            return ErrorResponse.create("Invalid depth input");
-        }
-
+    private synchronized AbstractResponse getTransactionsToApproveStatement(Optional<Hash> reference) throws Exception {
         try {
-            List<Hash> tips = getTransactionToApproveTips(depth, reference);
+            List<Hash> tips = getTransactionToApproveTips(reference);
             return GetTransactionsToApproveResponse.create(tips.get(0), tips.get(1));
 
         } catch (Exception e) {
@@ -693,18 +683,17 @@ public class API {
      * Gets tips which can be used by new transactions to approve.
      * If debug is enabled, statistics on tip selection will be gathered.
      * 
-     * @param depth The milestone depth for finding the transactions to approve.
      * @param reference An optional transaction hash to be referenced by tips.
      * @return The tips which can be approved.
      * @throws Exception if the subtangle is out of date or if we fail to retrieve transaction tips.
      * @see TipSelector 
      */
-    List<Hash> getTransactionToApproveTips(int depth, Optional<Hash> reference) throws Exception {
+    List<Hash> getTransactionToApproveTips(Optional<Hash> reference) throws Exception {
         if (invalidSubtangleStatus()) {
             throw new IllegalStateException(INVALID_SUBTANGLE);
         }
 
-        List<Hash> tips = instance.tipsSelector.getTransactionsToApprove(depth, reference);
+        List<Hash> tips = instance.tipsSelector.getTransactionsToApprove(reference);
 
         if (log.isDebugEnabled()) {
             gatherStatisticsOnTipSelection();
@@ -1351,7 +1340,7 @@ public class API {
      * @param message The message to store
      **/
     private synchronized AbstractResponse storeMessageStatement(String address, String message) throws Exception {
-        final List<Hash> txToApprove = getTransactionToApproveTips(3, Optional.empty());
+        final List<Hash> txToApprove = getTransactionToApproveTips(Optional.empty());
 
         final int txMessageSize = TransactionViewModel.SIGNATURE_MESSAGE_FRAGMENT_TRINARY_SIZE / 3;
 
