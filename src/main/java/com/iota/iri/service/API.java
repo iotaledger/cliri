@@ -111,8 +111,6 @@ public class API {
     private final static String overMaxErrorMessage = "Could not complete request";
     private final static String invalidParams = "Invalid parameters";
 
-    private ConcurrentHashMap<Hash, Boolean> previousEpochsSpentAddresses;
-
     private final static char ZERO_LENGTH_ALLOWED = 'Y';
     private final static char ZERO_LENGTH_NOT_ALLOWED = 'N';
     private Iota instance;
@@ -135,8 +133,6 @@ public class API {
         maxGetTrytes = configuration.getMaxGetTrytes();
         maxBodyLength = configuration.getMaxBodyLength();
         testNet = configuration.isTestnet();
-
-        previousEpochsSpentAddresses = new ConcurrentHashMap<>();
 
         features = Feature.calculateFeatureNames(instance.configuration);
     }
