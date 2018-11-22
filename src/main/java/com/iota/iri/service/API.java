@@ -16,7 +16,6 @@ import com.iota.iri.model.persistables.Transaction;
 import com.iota.iri.network.Neighbor;
 import com.iota.iri.service.dto.*;
 import com.iota.iri.service.tipselection.TipSelector;
-import com.iota.iri.service.tipselection.impl.WalkValidatorImpl;
 import com.iota.iri.utils.Converter;
 import com.iota.iri.utils.IotaIOUtils;
 import com.iota.iri.utils.MapIdentityManager;
@@ -24,6 +23,7 @@ import com.iota.iri.utils.MapIdentityManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,6 +85,7 @@ public class API {
                                                  + "The subtangle has not been updated yet.";
     
     private static final Logger log = LoggerFactory.getLogger(API.class);
+    private static final String NOT_SUPPORTED = "not supported in CLIRI";
     private final IXI ixi;
 
     private Undertow server;
@@ -497,84 +498,7 @@ public class API {
      * @return {@link com.iota.iri.service.dto.wereAddressesSpentFrom}
      **/
     private AbstractResponse wereAddressesSpentFromStatement(List<String> addresses) throws Exception {
-        final List<Hash> addressesHash = addresses.stream()
-                .map(HashFactory.ADDRESS::create)
-                .collect(Collectors.toList());
-
-        final boolean[] states = new boolean[addressesHash.size()];
-        int index = 0;
-
-        for (Hash address : addressesHash) {
-            states[index++] = wasAddressSpentFrom(address);
-        }
-        return WereAddressesSpentFrom.create(states);
-    }
-
-    /**
-     * Checks if the address was ever spent from, in the current epoch, or in previous epochs.
-     * If an address has a pending transaction, it is also marked as spent.
-     * 
-     * @param address The address to check if it was ever spent from.
-     * @return <tt>true</tt> if it was spent from, otherwise <tt>false</tt>
-     * @throws Exception When a model could not be loaded.
-     */
-    private boolean wasAddressSpentFrom(Hash address) throws Exception {
-        if (previousEpochsSpentAddresses.containsKey(address)) {
-            return true;
-        }
-        
-        Set<Hash> hashes = AddressViewModel.load(instance.tangle, address).getHashes();
-        for (Hash hash : hashes) {
-            final TransactionViewModel tx = TransactionViewModel.fromHash(instance.tangle, hash);
-            // Check for spending transactions
-            if (tx.value() < 0) {
-                // Transaction is pending
-                Hash tail = findTail(hash);
-                if (tail != null && BundleValidator.validate(instance.tangle, tail).size() != 0) {
-                    return true;
-                }
-            }
-        }
-        
-        // No spending transaction found
-        return false;
-    }
-
-    /**
-     * Walks back from the hash until a tail transaction has been found or transaction aprovee is not found.
-     * A tail transaction is the first transaction in a bundle, thus with <code>index = 0</code>
-     * 
-     * @param hash The transaction hash where we start the search from. If this is a tail, its hash is returned.
-     * @return The transaction hash of the tail
-     * @throws Exception When a model could not be loaded.
-     */
-    private Hash findTail(Hash hash) throws Exception {
-        TransactionViewModel tx = TransactionViewModel.fromHash(instance.tangle, hash);
-        final Hash bundleHash = tx.getBundleHash();
-        long index = tx.getCurrentIndex();
-        boolean foundApprovee = false;
-        
-        // As long as the index is bigger than 0 and we are still traversing the same bundle
-        // If the hash we asked about is already a tail, this loop never starts
-        while (index-- > 0 && tx.getBundleHash().equals(bundleHash)) {
-            Set<Hash> approvees = tx.getApprovers(instance.tangle).getHashes();
-            for (Hash approvee : approvees) {
-                TransactionViewModel nextTx = TransactionViewModel.fromHash(instance.tangle, approvee);
-                if (nextTx.getBundleHash().equals(bundleHash)) {
-                    tx = nextTx;
-                    foundApprovee = true;
-                    break;
-                }
-            }
-            if (!foundApprovee) {
-                break;
-            }
-        }
-        
-        if (tx.getCurrentIndex() == 0) {
-            return tx.getHash();
-        }
-        return null;
+        throw new NotImplementedException(NOT_SUPPORTED);
     }
 
 
@@ -594,49 +518,11 @@ public class API {
      * @return {@link CheckConsistency}
      **/
     private AbstractResponse checkConsistencyStatement(List<String> transactionsList) throws Exception {
-        final List<Hash> transactions = transactionsList.stream().map(HashFactory.TRANSACTION::create).collect(Collectors.toList());
-        boolean state = true;
-        String info = "";
-
-        // Check if the transactions themselves are valid
-        for (Hash transaction : transactions) {
-            TransactionViewModel txVM = TransactionViewModel.fromHash(instance.tangle, transaction);
-            if (txVM.getType() == TransactionViewModel.PREFILLED_SLOT) {
-                return ErrorResponse.create("Invalid transaction, missing: " + transaction);
-            }
-            if (txVM.getCurrentIndex() != 0) {
-                return ErrorResponse.create("Invalid transaction, not a tail: " + transaction);
-            }
-
-
-            if (!txVM.isSolid()) {
-                state = false;
-                info = "tails are not solid (missing a referenced tx): " + transaction;
-                break;
-            } else if (BundleValidator.validate(instance.tangle, txVM.getHash()).size() == 0) {
-                state = false;
-                info = "tails are not consistent (bundle is invalid): " + transaction;
-                break;
-            }
-        }
-
-        // Transactions are valid, lets check ledger consistency
-        if (state) {
-            WalkValidatorImpl walkValidator = new WalkValidatorImpl(instance.tangle,
-                    instance.ledgerValidator, instance.configuration);
-            for (Hash transaction : transactions) {
-                if (!walkValidator.isValid(transaction)) {
-                    state = false;
-                    info = "tails are not consistent (would lead to inconsistent ledger state or below max depth)";
-                    break;
-                }
-            }
-        }
-
-        return CheckConsistency.create(state, info);
+        throw new NotImplementedException(NOT_SUPPORTED);
     }
 
     /**
+     * Always returns false in CLIRI!
      * Compares the last received confirmed milestone with the last global snapshot milestone.
      * If these are equal, it means the tangle is empty and therefore invalid.
      * 
@@ -942,10 +828,8 @@ public class API {
     private AbstractResponse getInclusionStatesStatement(
             final List<String> transactions, 
             final List<String> tips) throws Exception {
-        //TODO CLIRI: correct exception format
-        throw new Exception("Not implemented");
+        throw new NotImplementedException(NOT_SUPPORTED);
     }
-    
     /**
       * <p>
       *     Find the transactions which match the specified input and return.
@@ -1143,8 +1027,7 @@ public class API {
     private AbstractResponse getBalancesStatement(List<String> addresses, 
                                                   List<String> tips, 
                                                   int threshold) throws Exception {
-
-        return ErrorResponse.create("");
+        throw new NotImplementedException(NOT_SUPPORTED);
     }
 
     private static int counter_PoW = 0;
