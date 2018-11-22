@@ -612,7 +612,7 @@ public class Node {
     }
     
     /**
-     * We send a tip request packet (transaction corresponding to the latest milestone)
+     * We send a tip request packet (the Genesis transaction)
      * to all of our neighbors periodically. 
      */    
     private Runnable spawnTipRequesterThread() {
@@ -623,7 +623,7 @@ public class Node {
             while (!shuttingDown.get()) {
 
                 try {
-                    //TODO-CLIRI: send genesis request
+                    //CLIRI: sends genesis as a signal for "random tip" request (IRI sends the latest milestone)
                     final TransactionViewModel transactionViewModel = TransactionViewModel.fromHash(tangle, Hash.NULL_HASH);
                     System.arraycopy(transactionViewModel.getBytes(), 0, tipRequestingPacket.getData(), 0, TransactionViewModel.SIZE);
                     System.arraycopy(transactionViewModel.getHash().bytes(), 0, tipRequestingPacket.getData(), TransactionViewModel.SIZE,

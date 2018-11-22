@@ -62,7 +62,6 @@ public class WalkValidatorImpl implements WalkValidator {
         } else if (!transactionViewModel.isSolid()) {
             log.debug("Validation failed: {} is not solid", transactionHash);
             return false;
-            //TODO-CLIRI remove belowMaxDepth, currently set to never trigger.
         } else if (belowMaxDepth(transactionViewModel.getHash(),
                 0 - config.getMaxDepth())) {
             log.debug("Validation failed: {} is below max depth", transactionHash);

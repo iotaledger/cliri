@@ -102,9 +102,9 @@ public class GetNodeInfoResponse extends AbstractResponse {
      * @return a {@link GetNodeInfoResponse} filled with all the provided parameters
      */
 	public static AbstractResponse create(String appName, String appVersion, int jreAvailableProcessors, long jreFreeMemory,
-										  String jreVersion, long maxMemory, long totalMemory,
-										  int neighbors, int packetsQueueSize, long currentTimeMillis, int tips,
-										  int numberOfTransactionsToRequest, String[] features) {
+								  String jreVersion, long maxMemory, long totalMemory,
+								  int neighbors, int packetsQueueSize, long currentTimeMillis, int tips,
+								  int numberOfTransactionsToRequest, String[] features) {
 		final GetNodeInfoResponse res = new GetNodeInfoResponse();
 		res.appName = appName;
 		res.appVersion = appVersion;

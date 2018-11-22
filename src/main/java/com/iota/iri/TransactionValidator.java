@@ -113,7 +113,7 @@ public class TransactionValidator {
     }
 
     /**
-     * Checks that the timestamp of the transaction is below the last global snapshot time
+     * Checks that the timestamp of the transaction is a negative value
      * or more than {@value #MAX_TIMESTAMP_FUTURE} seconds in the future, and thus invalid.
      *
      * <p>

@@ -9,8 +9,6 @@ import java.util.Objects;
 public class TestnetConfig extends BaseIotaConfig {
 
     protected int mwm = Defaults.MWM;
-    protected int milestoneStartIndex = Defaults.MILESTONE_START_INDEX;
-    protected int numberOfKeysInMilestone = Defaults.KEYS_IN_MILESTONE;
     protected int transactionPacketSize = Defaults.PACKET_SIZE;
     protected int requestHashSize = Defaults.REQUEST_HASH_SIZE;
 
@@ -79,8 +77,6 @@ public class TestnetConfig extends BaseIotaConfig {
     public interface Defaults {
         int REQUEST_HASH_SIZE = 49;
         int MWM = 9;
-        int MILESTONE_START_INDEX = 434525;
-        int KEYS_IN_MILESTONE = 22;
         int PACKET_SIZE = 1653;
         String DB_PATH = "testnetdb";
         String DB_LOG_PATH = "testnetdb.log";

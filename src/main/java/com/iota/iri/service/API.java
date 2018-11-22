@@ -648,7 +648,6 @@ public class API {
      * @return <tt>false</tt> if we received at least a solid milestone, otherwise <tt>true</tt>
      */
     public boolean invalidSubtangleStatus() {
-        //TODO CLIRI: this mechanism is used for unsynced nodes.
         return false;
     }
     
@@ -1310,7 +1309,6 @@ public class API {
                                                   List<String> tips, 
                                                   int threshold) throws Exception {
 
-        //TODO CLIRI: report unimplemented error
         return ErrorResponse.create("");
     }
 

@@ -95,7 +95,7 @@ public abstract class BaseIotaConfig implements IotaConfig {
                 .acceptUnknownOptions(true)
                 .allowParameterOverwriting(true)
                 //This is the first line of JCommander Usage
-                .programName("java -jar iri-" +  IRI.VERSION + ".jar")
+                .programName("java -jar iri-" + IRI.VERSION + ".jar")
                 .build();
         if (ArrayUtils.isNotEmpty(args)) {
             jCommander.parse(args);
@@ -419,17 +419,6 @@ public abstract class BaseIotaConfig implements IotaConfig {
     @Parameter(names = {"--p-select-milestone"}, description = ProtocolConfig.Descriptions.P_SELECT_MILESTONE)
     protected void setpSelectMilestoneChild(double pSelectMilestoneChild) {
         this.pSelectMilestoneChild = pSelectMilestoneChild;
-    }
-
-    @Override
-    public double getpSendMilestone() {
-        return pSendMilestone;
-    }
-
-    @JsonProperty
-    @Parameter(names = {"--p-send-milestone"}, description = ProtocolConfig.Descriptions.P_SEND_MILESTONE)
-    protected void setpSendMilestone(double pSendMilestone) {
-        this.pSendMilestone = pSendMilestone;
     }
 
     @Override

@@ -306,7 +306,6 @@ public class ConfigTest {
         P_REMOVE_REQUEST,
         P_DROP_TRANSACTION,
         P_SELECT_MILESTONE_CHILD,
-        P_SEND_MILESTONE,
         P_REPLY_RANDOM_TIP,
         P_PROPAGATE_REQUEST,
         MAIN_DB,
