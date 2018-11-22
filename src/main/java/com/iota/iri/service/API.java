@@ -24,6 +24,7 @@ import com.iota.iri.utils.MapIdentityManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,6 +86,7 @@ public class API {
                                                  + "The subtangle has not been updated yet.";
     
     private static final Logger log = LoggerFactory.getLogger(API.class);
+    private static final String NOT_SUPPORTED = "not supported in CLIRI";
     private final IXI ixi;
 
     private Undertow server;
@@ -497,89 +499,8 @@ public class API {
      * @return {@link com.iota.iri.service.dto.wereAddressesSpentFrom}
      **/
     private AbstractResponse wereAddressesSpentFromStatement(List<String> addresses) throws Exception {
-        final List<Hash> addressesHash = addresses.stream()
-                .map(HashFactory.ADDRESS::create)
-                .collect(Collectors.toList());
+        throw new NotImplementedException(NOT_SUPPORTED);
 
-        final boolean[] states = new boolean[addressesHash.size()];
-        int index = 0;
-
-        for (Hash address : addressesHash) {
-            states[index++] = wasAddressSpentFrom(address);
-        }
-        return WereAddressesSpentFrom.create(states);
-    }
-
-    /**
-     * Checks if the address was ever spent from, in the current epoch, or in previous epochs.
-     * If an address has a pending transaction, it is also marked as spent.
-     * 
-     * @param address The address to check if it was ever spent from.
-     * @return <tt>true</tt> if it was spent from, otherwise <tt>false</tt>
-     * @throws Exception When a model could not be loaded.
-     */
-    private boolean wasAddressSpentFrom(Hash address) throws Exception {
-        if (previousEpochsSpentAddresses.containsKey(address)) {
-            return true;
-        }
-        
-        Set<Hash> hashes = AddressViewModel.load(instance.tangle, address).getHashes();
-        for (Hash hash : hashes) {
-            final TransactionViewModel tx = TransactionViewModel.fromHash(instance.tangle, hash);
-            // Check for spending transactions
-            if (tx.value() < 0) {
-                // Transaction is confirmed
-                if (tx.snapshotIndex() != 0) {
-                    return true;
-                }
-                
-                // Transaction is pending
-                Hash tail = findTail(hash);
-                if (tail != null && BundleValidator.validate(instance.tangle, tail).size() != 0) {
-                    return true;
-                }
-            }
-        }
-        
-        // No spending transaction found
-        return false;
-    }
-
-    /**
-     * Walks back from the hash until a tail transaction has been found or transaction aprovee is not found.
-     * A tail transaction is the first transaction in a bundle, thus with <code>index = 0</code>
-     * 
-     * @param hash The transaction hash where we start the search from. If this is a tail, its hash is returned.
-     * @return The transaction hash of the tail
-     * @throws Exception When a model could not be loaded.
-     */
-    private Hash findTail(Hash hash) throws Exception {
-        TransactionViewModel tx = TransactionViewModel.fromHash(instance.tangle, hash);
-        final Hash bundleHash = tx.getBundleHash();
-        long index = tx.getCurrentIndex();
-        boolean foundApprovee = false;
-        
-        // As long as the index is bigger than 0 and we are still traversing the same bundle
-        // If the hash we asked about is already a tail, this loop never starts
-        while (index-- > 0 && tx.getBundleHash().equals(bundleHash)) {
-            Set<Hash> approvees = tx.getApprovers(instance.tangle).getHashes();
-            for (Hash approvee : approvees) {
-                TransactionViewModel nextTx = TransactionViewModel.fromHash(instance.tangle, approvee);
-                if (nextTx.getBundleHash().equals(bundleHash)) {
-                    tx = nextTx;
-                    foundApprovee = true;
-                    break;
-                }
-            }
-            if (!foundApprovee) {
-                break;
-            }
-        }
-        
-        if (tx.getCurrentIndex() == 0) {
-            return tx.getHash();
-        }
-        return null;
     }
 
 
@@ -599,49 +520,11 @@ public class API {
      * @return {@link CheckConsistency}
      **/
     private AbstractResponse checkConsistencyStatement(List<String> transactionsList) throws Exception {
-        final List<Hash> transactions = transactionsList.stream().map(HashFactory.TRANSACTION::create).collect(Collectors.toList());
-        boolean state = true;
-        String info = "";
-
-        // Check if the transactions themselves are valid
-        for (Hash transaction : transactions) {
-            TransactionViewModel txVM = TransactionViewModel.fromHash(instance.tangle, transaction);
-            if (txVM.getType() == TransactionViewModel.PREFILLED_SLOT) {
-                return ErrorResponse.create("Invalid transaction, missing: " + transaction);
-            }
-            if (txVM.getCurrentIndex() != 0) {
-                return ErrorResponse.create("Invalid transaction, not a tail: " + transaction);
-            }
-
-
-            if (!txVM.isSolid()) {
-                state = false;
-                info = "tails are not solid (missing a referenced tx): " + transaction;
-                break;
-            } else if (BundleValidator.validate(instance.tangle, txVM.getHash()).size() == 0) {
-                state = false;
-                info = "tails are not consistent (bundle is invalid): " + transaction;
-                break;
-            }
-        }
-
-        // Transactions are valid, lets check ledger consistency
-        if (state) {
-            WalkValidatorImpl walkValidator = new WalkValidatorImpl(instance.tangle,
-                    instance.ledgerValidator, instance.configuration);
-            for (Hash transaction : transactions) {
-                if (!walkValidator.isValid(transaction)) {
-                    state = false;
-                    info = "tails are not consistent (would lead to inconsistent ledger state or below max depth)";
-                    break;
-                }
-            }
-        }
-
-        return CheckConsistency.create(state, info);
+        throw new NotImplementedException(NOT_SUPPORTED);
     }
 
     /**
+     * Always returns false in CLIRI!
      * Compares the last received confirmed milestone with the last global snapshot milestone.
      * If these are equal, it means the tangle is empty and therefore invalid.
      * 
@@ -947,168 +830,9 @@ public class API {
     private AbstractResponse getInclusionStatesStatement(
             final List<String> transactions, 
             final List<String> tips) throws Exception {
-        
-        final List<Hash> trans = transactions.stream()
-                .map(HashFactory.TRANSACTION::create)
-                .collect(Collectors.toList());
-        
-        final List<Hash> tps = tips.stream().
-                map(HashFactory.TRANSACTION::create)
-                .collect(Collectors.toList());
 
-        int numberOfNonMetTransactions = trans.size();
-        final byte[] inclusionStates = new byte[numberOfNonMetTransactions];
+        throw new NotImplementedException(NOT_SUPPORTED);
 
-        List<Integer> tipsIndex = new LinkedList<>();
-        {
-            for(Hash tip: tps) {
-                TransactionViewModel tx = TransactionViewModel.fromHash(instance.tangle, tip);
-                if (tx.getType() != TransactionViewModel.PREFILLED_SLOT) {
-                    tipsIndex.add(tx.snapshotIndex());
-                }
-            }
-        }
-        
-        // Finds the lowest tips index, or 0
-        int minTipsIndex = tipsIndex.stream().reduce((a,b) -> a < b ? a : b).orElse(0);
-        
-        // If the lowest tips index (minTipsIndex) is 0 (or lower), 
-        // we can't check transactions against snapshots because there were no tips,
-        // or tips have not been confirmed by a snapshot yet
-        if(minTipsIndex > 0) {
-            // Finds the highest tips index, or 0
-            int maxTipsIndex = tipsIndex.stream().reduce((a,b) -> a > b ? a : b).orElse(0);
-            int count = 0;
-            
-            // Checks transactions with indexes of tips, and sets inclusionStates byte to 1 or -1 accordingly
-            // Sets to -1 if the transaction is only known by hash, 
-            // or has no index, or index is above the max tip index (not included).
-
-            // Sets to 1 if the transaction index is below the max index of tips (included).
-            for(Hash hash: trans) {
-                TransactionViewModel transaction = TransactionViewModel.fromHash(instance.tangle, hash);
-                if(transaction.getType() == TransactionViewModel.PREFILLED_SLOT || transaction.snapshotIndex() == 0) {
-                    inclusionStates[count] = -1;
-                } else if(transaction.snapshotIndex() > maxTipsIndex) {
-                    inclusionStates[count] = -1;
-                } else if(transaction.snapshotIndex() < maxTipsIndex) {
-                    inclusionStates[count] = 1;
-                }
-                count++;
-            }
-        }
-
-        Set<Hash> analyzedTips = new HashSet<>();
-        Map<Integer, Integer> sameIndexTransactionCount = new HashMap<>();
-        Map<Integer, Queue<Hash>> sameIndexTips = new HashMap<>();
-        
-        // Sorts all tips per snapshot index. Stops if a tip is not in our database, or just as a hash.
-        for (final Hash tip : tps) {
-            TransactionViewModel transactionViewModel = TransactionViewModel.fromHash(instance.tangle, tip);
-            if (transactionViewModel.getType() == TransactionViewModel.PREFILLED_SLOT){
-                return ErrorResponse.create("One of the tips is absent");
-            }
-            int snapshotIndex = transactionViewModel.snapshotIndex();
-            sameIndexTips.putIfAbsent(snapshotIndex, new LinkedList<>());
-            sameIndexTips.get(snapshotIndex).add(tip);
-        }
-        
-        // Loop over all transactions without a state, and counts the amount per snapshot index
-        for(int i = 0; i < inclusionStates.length; i++) {
-            if(inclusionStates[i] == 0) {
-                TransactionViewModel transactionViewModel = TransactionViewModel.fromHash(instance.tangle, trans.get(i));
-                int snapshotIndex = transactionViewModel.snapshotIndex();
-                sameIndexTransactionCount.putIfAbsent(snapshotIndex, 0);
-                sameIndexTransactionCount.put(snapshotIndex, sameIndexTransactionCount.get(snapshotIndex) + 1);
-            }
-        }
-        
-        // Loop over all snapshot indexes of transactions that were not confirmed.
-        // If we encounter an invalid tangle, stop this function completely.
-        for(Integer index : sameIndexTransactionCount.keySet()) {
-            // Get the tips from the snapshot indexes we are missing
-            Queue<Hash> sameIndexTip = sameIndexTips.get(index);
-            
-            // We have tips on the same level as transactions, do a manual search.
-            if (sameIndexTip != null && !exhaustiveSearchWithinIndex(
-                        sameIndexTip, analyzedTips, trans, 
-                        inclusionStates, sameIndexTransactionCount.get(index), index)) {
-                    
-                return ErrorResponse.create(INVALID_SUBTANGLE);
-            }
-        }
-        final boolean[] inclusionStatesBoolean = new boolean[inclusionStates.length];
-        for(int i = 0; i < inclusionStates.length; i++) {
-            // If a state is 0 by now, we know nothing so assume not included
-            inclusionStatesBoolean[i] = inclusionStates[i] == 1;
-        }
-        
-        {
-            return GetInclusionStatesResponse.create(inclusionStatesBoolean);
-        }
-    }
-    
-    /**
-     * Traverses down the tips until all transactions we wish to validate have been found or transaction data is missing.
-     * 
-     * @param nonAnalyzedTransactions Tips we will analyze.
-     * @param analyzedTips The hashes of tips we have analyzed. 
-     *                     Hashes specified here won't be analyzed again.
-     * @param transactions All transactions we are validating. 
-     * @param inclusionStates The state of each transaction. 
-     *                        1 means confirmed, -1 means unconfirmed, 0 is unknown confirmation.
-     *                        Should be of equal length as <tt>transactions</tt>.
-     * @param count The amount of transactions on the same index level as <tt>nonAnalyzedTransactions</tt>. 
-     * @param index The snapshot index of the tips in <tt>nonAnalyzedTransactions</tt>.
-     * @return <tt>true</tt> if all <tt>transactions</tt> are directly or indirectly references by 
-     *         <tt>nonAnalyzedTransactions</tt>. 
-     *         If at some point we are missing transaction data <tt>false</tt> is returned immediately.
-     * @throws Exception If a {@link TransactionViewModel} cannot be loaded.
-     */
-    private boolean exhaustiveSearchWithinIndex(
-                Queue<Hash> nonAnalyzedTransactions, 
-                Set<Hash> analyzedTips, 
-                List<Hash> transactions, 
-                byte[] inclusionStates, int count, int index) throws Exception {
-        
-        Hash pointer;
-        MAIN_LOOP:
-        // While we have nonAnalyzedTransactions in the Queue
-        while ((pointer = nonAnalyzedTransactions.poll()) != null) {
-            // Only analyze tips we haven't analyzed yet
-            if (analyzedTips.add(pointer)) {
-                
-                // Check if the transactions have indeed this index. Otherwise ignore.
-                // Starts off with the tips in nonAnalyzedTransactions, but transaction trunk & branch gets added.
-                final TransactionViewModel transactionViewModel = TransactionViewModel.fromHash(instance.tangle, pointer);
-                if (transactionViewModel.snapshotIndex() == index) {
-                    // Do we have the complete transaction? 
-                    if (transactionViewModel.getType() == TransactionViewModel.PREFILLED_SLOT) {
-                        // Incomplete transaction data, stop search.
-                        return false;
-                    } else {
-                        // check all transactions we wish to verify confirmation for
-                        for (int i = 0; i < inclusionStates.length; i++) {
-                            if (inclusionStates[i] < 1 && pointer.equals(transactions.get(i))) {
-                                // A tip, or its branch/trunk points to this transaction. 
-                                // That means this transaction is confirmed by this tip.
-                                inclusionStates[i] = 1;
-                                
-                                // Only stop search when we have found all transactions we were looking for
-                                if (--count <= 0) {
-                                    break MAIN_LOOP;
-                                }
-                            }
-                        }
-                        
-                        // Add trunk and branch to the queue for the transaction confirmation check
-                        nonAnalyzedTransactions.offer(transactionViewModel.getTrunkTransactionHash());
-                        nonAnalyzedTransactions.offer(transactionViewModel.getBranchTransactionHash());
-                    }
-                }
-            }
-        }
-        return true;
     }
 
     /**
@@ -1309,7 +1033,7 @@ public class API {
                                                   List<String> tips, 
                                                   int threshold) throws Exception {
 
-        return ErrorResponse.create("");
+        throw new NotImplementedException(NOT_SUPPORTED);
     }
 
     private static int counter_PoW = 0;
