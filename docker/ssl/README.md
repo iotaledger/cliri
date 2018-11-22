@@ -11,7 +11,7 @@ You'll need the following in order to get started:
 ## Getting Started
 1. Clone this repository:
 ```
-git clone https://github.com/iotaledger/iri
+git clone https://github.com/iotaledger/cliri
 ```
 
 2. Navigate to this directory:
