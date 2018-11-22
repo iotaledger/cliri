@@ -350,18 +350,7 @@ public abstract class BaseIotaConfig implements IotaConfig {
     protected void setMainDb(String mainDb) {
         this.mainDb = mainDb;
     }
-
-    @Override
-    public boolean isRevalidate() {
-        return revalidate;
-    }
-
-    @JsonProperty
-    @Parameter(names = {"--revalidate"}, description = DbConfig.Descriptions.REVALIDATE)
-    protected void setRevalidate(boolean revalidate) {
-        this.revalidate = revalidate;
-    }
-
+    
     @Override
     public boolean isRescanDb() {
         return rescanDb;

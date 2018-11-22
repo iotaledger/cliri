@@ -73,8 +73,6 @@ public class ConfigTest {
                 "--zmq-enabled",
                 //we ignore this on mainnet
                 "--mwm", "4",
-                "--testnet-coordinator", "TTTTTTTTT",
-                "--test-no-coo-validation",
                 //this should be ignored everywhere
                 "--fake-config"
         };
@@ -139,8 +137,6 @@ public class ConfigTest {
                 "--zmq-enabled",
                 //we ignore this on mainnet
                 "--mwm", "4",
-                "--testnet-coordinator", "TTTTTTTTT",
-                "--testnet-no-coo-validation",
                 //this should be ignored everywhere
                 "--fake-config"
         };
@@ -209,8 +205,6 @@ public class ConfigTest {
                 .append("DNS_RESOLUTION_ENABLED = TRUE").append(System.lineSeparator())
                 .append("P_REMOVE_REQUEST = 0.4").append(System.lineSeparator())
                 .append("MWM = 4").append(System.lineSeparator())
-                .append("NUMBER_OF_KEYS_IN_A_MILESTONE = 3").append(System.lineSeparator())
-                .append("DONT_VALIDATE_TESTNET_MILESTONE_SIG = true").append(System.lineSeparator())
                 .append("TIPSELECTION_ALPHA = 1.1").append(System.lineSeparator())
                 //doesn't do anything
                 .append("REMOTE")
@@ -234,7 +228,6 @@ public class ConfigTest {
         //false by default
         Assert.assertEquals("RESCAN", false, iotaConfig.isRescanDb());
         //false by default
-        Assert.assertEquals("REVALIDATE", false, iotaConfig.isRevalidate());
         Assert.assertEquals("P_REMOVE_REQUEST", 0.4d, iotaConfig.getpRemoveRequest(), 0);
         Assert.assertEquals("MWM", 4, iotaConfig.getMwm());
         Assert.assertEquals("TIPSELECTION_ALPHA", 1.1d, iotaConfig.getAlpha(), 0);
@@ -247,7 +240,7 @@ public class ConfigTest {
     public void testInvalidIni() throws IOException {
         String iniContent = new StringBuilder()
                 .append("[IRI]").append(System.lineSeparator())
-                .append("REVALIDATE")
+                .append("RESCAN_DB")
                 .toString();
         try (Writer writer = new FileWriter(configFile)) {
             writer.write(iniContent);
@@ -313,7 +306,6 @@ public class ConfigTest {
         MAX_PEERS,
         DNS_RESOLUTION_ENABLED,
         DNS_REFRESHER_ENABLED,
-        REVALIDATE,
         RESCAN_DB,
         MIN_RANDOM_WALKS,
         MAX_RANDOM_WALKS,

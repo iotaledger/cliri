@@ -36,8 +36,6 @@ public class RocksDBPersistenceProvider implements PersistenceProvider {
         new String(RocksDB.DEFAULT_COLUMN_FAMILY),
         "transaction",
         "transaction-metadata",
-        "milestone",
-        "stateDiff",
         "address",
         "approvee",
         "bundle",
@@ -54,8 +52,6 @@ public class RocksDBPersistenceProvider implements PersistenceProvider {
 
     private ColumnFamilyHandle transactionHandle;
     private ColumnFamilyHandle transactionMetadataHandle;
-    private ColumnFamilyHandle milestoneHandle;
-    private ColumnFamilyHandle stateDiffHandle;
     private ColumnFamilyHandle addressHandle;
     private ColumnFamilyHandle approveeHandle;
     private ColumnFamilyHandle bundleHandle;
@@ -494,8 +490,6 @@ public class RocksDBPersistenceProvider implements PersistenceProvider {
         int i = 0;
         transactionHandle = columnFamilyHandles.get(++i);
         transactionMetadataHandle = columnFamilyHandles.get(++i);
-        milestoneHandle = columnFamilyHandles.get(++i);
-        stateDiffHandle = columnFamilyHandles.get(++i);
         addressHandle = columnFamilyHandles.get(++i);
         approveeHandle = columnFamilyHandles.get(++i);
         bundleHandle = columnFamilyHandles.get(++i);
