@@ -48,6 +48,10 @@ public class WalkValidatorImpl implements WalkValidator {
     @Override
     public boolean isValid(Hash transactionHash) throws Exception {
 
+        if (Hash.NULL_HASH.equals(transactionHash)) {
+            return true; //Genesis
+        }
+
         TransactionViewModel transactionViewModel = TransactionViewModel.fromHash(tangle, transactionHash);
         if (transactionViewModel.getType() == TransactionViewModel.PREFILLED_SLOT) {
             log.debug("Validation failed: {} is missing in db", transactionHash);
