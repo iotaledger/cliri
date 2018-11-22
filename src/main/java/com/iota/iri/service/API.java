@@ -501,6 +501,7 @@ public class API {
     private AbstractResponse wereAddressesSpentFromStatement(List<String> addresses) throws Exception {
         throw new NotImplementedException(NOT_SUPPORTED);
 
+
     }
 
 
@@ -834,7 +835,6 @@ public class API {
         throw new NotImplementedException(NOT_SUPPORTED);
 
     }
-
     /**
       * <p>
       *     Find the transactions which match the specified input and return.

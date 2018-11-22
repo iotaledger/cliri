@@ -30,8 +30,6 @@ public class WalkValidatorImpl implements WalkValidator {
     private final LedgerValidator ledgerValidator;
     private final TipSelConfig config;
 
-
-    private Set<Hash> maxDepthOkMemoization;
     private Map<Hash, Long> myDiff;
     private Set<Hash> myApprovedHashes;
 
@@ -40,7 +38,6 @@ public class WalkValidatorImpl implements WalkValidator {
         this.ledgerValidator = ledgerValidator;
         this.config = config;
 
-        maxDepthOkMemoization = new HashSet<>();
         myDiff = new HashMap<>();
         myApprovedHashes = new HashSet<>();
     }
@@ -62,8 +59,7 @@ public class WalkValidatorImpl implements WalkValidator {
         } else if (!transactionViewModel.isSolid()) {
             log.debug("Validation failed: {} is not solid", transactionHash);
             return false;
-        } else if (belowMaxDepth(transactionViewModel.getHash(),
-                0 - config.getMaxDepth())) {
+        } else if (belowMaxDepth(transactionViewModel.getHash())) {
             log.debug("Validation failed: {} is below max depth", transactionHash);
             return false;
         } else if (!ledgerValidator.updateDiff(myApprovedHashes, myDiff, transactionViewModel.getHash())) {
@@ -73,40 +69,7 @@ public class WalkValidatorImpl implements WalkValidator {
         return true;
     }
 
-    private boolean belowMaxDepth(Hash tip, int lowerAllowedSnapshotIndex) throws Exception {
-        //if tip is confirmed stop
-        if (TransactionViewModel.fromHash(tangle, tip).snapshotIndex() >= lowerAllowedSnapshotIndex) {
-            return false;
-        }
-        //if tip unconfirmed, check if any referenced tx is confirmed below maxDepth
-        Queue<Hash> nonAnalyzedTransactions = new LinkedList<>(Collections.singleton(tip));
-        Set<Hash> analyzedTransactions = new HashSet<>();
-        Hash hash;
-        final int maxAnalyzedTransactions = config.getBelowMaxDepthTransactionLimit();
-        while ((hash = nonAnalyzedTransactions.poll()) != null) {
-            if (analyzedTransactions.size() == maxAnalyzedTransactions) {
-                log.debug("failed below max depth because of exceeding max threshold of {} analyzed transactions",
-                        maxAnalyzedTransactions);
-                return true;
-            }
-
-            if (analyzedTransactions.add(hash)) {
-                TransactionViewModel transaction = TransactionViewModel.fromHash(tangle, hash);
-                if ((transaction.snapshotIndex() != 0 || Objects.equals(Hash.NULL_HASH, transaction.getHash()))
-                        && transaction.snapshotIndex() < lowerAllowedSnapshotIndex) {
-                    log.debug("failed below max depth because of reaching a tx below the allowed snapshot index {}",
-                            lowerAllowedSnapshotIndex);
-                    return true;
-                }
-                if (transaction.snapshotIndex() == 0) {
-                    if (!maxDepthOkMemoization.contains(hash)) {
-                        nonAnalyzedTransactions.offer(transaction.getTrunkTransactionHash());
-                        nonAnalyzedTransactions.offer(transaction.getBranchTransactionHash());
-                    }
-                }
-            }
-        }
-        maxDepthOkMemoization.add(tip);
+    private boolean belowMaxDepth(Hash tip) throws Exception {
         return false;
     }
 }
