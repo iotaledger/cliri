@@ -1,6 +1,5 @@
 package com.iota.iri.network;
 
-import com.iota.iri.MilestoneTracker;
 import com.iota.iri.TransactionValidator;
 import com.iota.iri.conf.NodeConfig;
 import com.iota.iri.controllers.TipsViewModel;
@@ -68,7 +67,6 @@ public class Node {
     private final Tangle tangle;
     private final TipsViewModel tipsViewModel;
     private final TransactionValidator transactionValidator;
-    private final MilestoneTracker milestoneTracker;
     private final TransactionRequester transactionRequester;
     private final MessageQ messageQ;
 
@@ -95,19 +93,17 @@ public class Node {
      * @param transactionValidator makes sure transaction is not malformed. 
      * @param transactionRequester Contains a set of transaction hashes to be requested from peers. 
      * @param tipsViewModel Contains a hash of solid and non solid tips
-     * @param milestoneTracker Tracks milestones issued from the coordinator
      * @param messageQ Responsible for publishing events on zeroMQ
      * @param configuration Contains all the config. 
      * 
      */
-    public Node(final Tangle tangle, final TransactionValidator transactionValidator, final TransactionRequester transactionRequester, final TipsViewModel tipsViewModel, final MilestoneTracker milestoneTracker, final MessageQ messageQ, final NodeConfig configuration
+    public Node(final Tangle tangle, final TransactionValidator transactionValidator, final TransactionRequester transactionRequester, final TipsViewModel tipsViewModel, final MessageQ messageQ, final NodeConfig configuration
     ) {
         this.configuration = configuration;
         this.tangle = tangle;
         this.transactionValidator = transactionValidator;
         this.transactionRequester = transactionRequester;
         this.tipsViewModel = tipsViewModel;
-        this.milestoneTracker = milestoneTracker;
         this.messageQ = messageQ;
         this.reqHashSize = configuration.getRequestHashSize();
         int packetSize = configuration.getTransactionPacketSize();
@@ -270,7 +266,7 @@ public class Node {
      * a {@link TransactionViewModel} object from it and perform some basic validation
      * on the received transaction via  {@link TransactionValidator#runValidation}
      * 
-     * The packet is then added to  {@link receiveQueue} for further processing. 
+     * The packet is then added to  {@link receiveQueue} for further processing.
      */
      
     public void preProcessReceivedData(byte[] receivedData, SocketAddress senderAddress, String uriScheme) {
@@ -540,7 +536,7 @@ public class Node {
     }
 
     private Hash getRandomTipPointer() throws Exception {
-        Hash tip = rnd.nextDouble() < configuration.getpSendMilestone() ? milestoneTracker.latestMilestone : tipsViewModel.getRandomSolidTipHash();
+        Hash tip = tipsViewModel.getRandomSolidTipHash();
         return tip == null ? Hash.NULL_HASH : tip;
     }
 
@@ -616,7 +612,7 @@ public class Node {
     }
     
     /**
-     * We send a tip request packet (transaction corresponding to the latest milestone)
+     * We send a tip request packet (the Genesis transaction)
      * to all of our neighbors periodically. 
      */    
     private Runnable spawnTipRequesterThread() {
@@ -627,7 +623,8 @@ public class Node {
             while (!shuttingDown.get()) {
 
                 try {
-                    final TransactionViewModel transactionViewModel = TransactionViewModel.fromHash(tangle, milestoneTracker.latestMilestone);
+                    //CLIRI: sends genesis as a signal for "random tip" request (IRI sends the latest milestone)
+                    final TransactionViewModel transactionViewModel = TransactionViewModel.fromHash(tangle, Hash.NULL_HASH);
                     System.arraycopy(transactionViewModel.getBytes(), 0, tipRequestingPacket.getData(), 0, TransactionViewModel.SIZE);
                     System.arraycopy(transactionViewModel.getHash().bytes(), 0, tipRequestingPacket.getData(), TransactionViewModel.SIZE,
                            reqHashSize);

@@ -1,6 +1,5 @@
 package com.iota.iri;
 
-import com.iota.iri.conf.SnapshotConfig;
 import com.iota.iri.controllers.TipsViewModel;
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.crypto.Curl;
@@ -27,8 +26,6 @@ public class TransactionValidator {
     private final TipsViewModel tipsViewModel;
     private final TransactionRequester transactionRequester;
     private int minWeightMagnitude = 81;
-    private final long snapshotTimestamp;
-    private final long snapshotTimestampMs;
     private static final long MAX_TIMESTAMP_FUTURE = 2L * 60L * 60L;
     private static final long MAX_TIMESTAMP_FUTURE_MS = MAX_TIMESTAMP_FUTURE * 1_000L;
 
@@ -58,15 +55,11 @@ public class TransactionValidator {
      * @param tangle relays tangle data to and from the persistence layer
      * @param tipsViewModel container that gets updated with the latest tips (transactions with no children)
      * @param transactionRequester used to request missing transactions from neighbors
-     * @param config configuration for obtaining snapshot data
      */
-    TransactionValidator(Tangle tangle, TipsViewModel tipsViewModel, TransactionRequester transactionRequester,
-                                SnapshotConfig config) {
+    TransactionValidator(Tangle tangle, TipsViewModel tipsViewModel, TransactionRequester transactionRequester) {
         this.tangle = tangle;
         this.tipsViewModel = tipsViewModel;
         this.transactionRequester = transactionRequester;
-        this.snapshotTimestamp = config.getSnapshotTime();
-        this.snapshotTimestampMs = snapshotTimestamp * 1000;
     }
 
     /**
@@ -120,7 +113,7 @@ public class TransactionValidator {
     }
 
     /**
-     * Checks that the timestamp of the transaction is below the last global snapshot time
+     * Checks that the timestamp of the transaction is a negative value
      * or more than {@value #MAX_TIMESTAMP_FUTURE} seconds in the future, and thus invalid.
      *
      * <p>
@@ -133,12 +126,12 @@ public class TransactionValidator {
      */
     private boolean hasInvalidTimestamp(TransactionViewModel transactionViewModel) {
         if (transactionViewModel.getAttachmentTimestamp() == 0) {
-            return transactionViewModel.getTimestamp() < snapshotTimestamp
+            return transactionViewModel.getTimestamp() < 0
                     //you are valid if you are the genesis
                     && !Objects.equals(transactionViewModel.getHash(), Hash.NULL_HASH)
                     || transactionViewModel.getTimestamp() > (System.currentTimeMillis() / 1000) + MAX_TIMESTAMP_FUTURE;
         }
-        return transactionViewModel.getAttachmentTimestamp() < snapshotTimestampMs
+        return transactionViewModel.getAttachmentTimestamp() < 0
                 || transactionViewModel.getAttachmentTimestamp() > System.currentTimeMillis() + MAX_TIMESTAMP_FUTURE_MS;
     }
 

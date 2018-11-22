@@ -59,10 +59,7 @@ public enum Feature {
      */
     public static Feature[] calculateFeatures(IotaConfig configuration) {
         List<Feature> features = new ArrayList<>();
-        
-        if (configuration.getLocalSnapshotsPruningEnabled()) {
-            features.add(SNAPSHOT_PRUNING);
-        }
+
         if (configuration.isDnsRefresherEnabled()) {
             features.add(DNS_REFRESHER);
         }

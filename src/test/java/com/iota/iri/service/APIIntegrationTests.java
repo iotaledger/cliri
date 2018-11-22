@@ -166,12 +166,7 @@ public class APIIntegrationTests {
             body(containsString("jreMaxMemory")).
             body(containsString("jreTotalMemory")).
             body(containsString("jreVersion")).
-            body(containsString("latestMilestone")).
-            body(containsString("latestMilestoneIndex")).
             body(containsString("jreAvailableProcessors")).
-            body(containsString("latestSolidSubtangleMilestone")).
-            body(containsString("latestSolidSubtangleMilestoneIndex")).
-            body(containsString("milestoneStartIndex")).
             body(containsString("neighbors")).
             body(containsString("packetsQueueSize")).
             body(containsString("time")).

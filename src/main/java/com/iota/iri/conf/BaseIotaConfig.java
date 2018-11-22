@@ -82,15 +82,6 @@ public abstract class BaseIotaConfig implements IotaConfig {
     //PearlDiver
     protected int powThreads = Defaults.POW_THREADS;
 
-    //Snapshot
-    protected boolean localSnapshotsEnabled = Defaults.LOCAL_SNAPSHOTS_ENABLED;
-    protected boolean localSnapshotsPruningEnabled = Defaults.LOCAL_SNAPSHOTS_PRUNING_ENABLED;
-    protected int localSnapshotsPruningDelay = Defaults.LOCAL_SNAPSHOTS_PRUNING_DELAY;
-    protected int localSnapshotsIntervalSynced = Defaults.LOCAL_SNAPSHOTS_INTERVAL_SYNCED;
-    protected int localSnapshotsIntervalUnsynced = Defaults.LOCAL_SNAPSHOTS_INTERVAL_UNSYNCED;
-    protected int localSnapshotsDepth = Defaults.LOCAL_SNAPSHOTS_DEPTH;
-    protected String localSnapshotsBasePath = Defaults.LOCAL_SNAPSHOTS_BASE_PATH;
-
     public BaseIotaConfig() {
         //empty constructor
     }
@@ -431,17 +422,6 @@ public abstract class BaseIotaConfig implements IotaConfig {
     }
 
     @Override
-    public double getpSendMilestone() {
-        return pSendMilestone;
-    }
-
-    @JsonProperty
-    @Parameter(names = {"--p-send-milestone"}, description = ProtocolConfig.Descriptions.P_SEND_MILESTONE)
-    protected void setpSendMilestone(double pSendMilestone) {
-        this.pSendMilestone = pSendMilestone;
-    }
-
-    @Override
     public double getpPropagateRequest() {
         return pPropagateRequest;
     }
@@ -451,114 +431,6 @@ public abstract class BaseIotaConfig implements IotaConfig {
     protected void setpPropagateRequest(double pPropagateRequest) {
         this.pPropagateRequest = pPropagateRequest;
     }
-
-    @Override
-    public boolean getLocalSnapshotsEnabled() {
-        return this.localSnapshotsEnabled;
-    }
-
-    @JsonProperty
-    @Parameter(names = {"--local-snapshots-enabled"}, description = SnapshotConfig.Descriptions.LOCAL_SNAPSHOTS_ENABLED)
-    protected void setLocalSnapshotsEnabled(boolean localSnapshotsEnabled) {
-        this.localSnapshotsEnabled = localSnapshotsEnabled;
-    }
-
-    @Override
-    public boolean getLocalSnapshotsPruningEnabled() {
-        return this.localSnapshotsPruningEnabled;
-    }
-
-    @JsonProperty
-    @Parameter(names = {"--local-snapshots-pruning-enabled"}, description = SnapshotConfig.Descriptions.LOCAL_SNAPSHOTS_PRUNING_ENABLED)
-    protected void setLocalSnapshotsPruningEnabled(boolean localSnapshotsPruningEnabled) {
-        this.localSnapshotsPruningEnabled = localSnapshotsPruningEnabled;
-    }
-
-    @Override
-    public int getLocalSnapshotsPruningDelay() {
-        return this.localSnapshotsPruningDelay;
-    }
-
-    @JsonProperty
-    @Parameter(names = {"--local-snapshots-pruning-delay"}, description = SnapshotConfig.Descriptions.LOCAL_SNAPSHOTS_PRUNING_DELAY)
-    protected void setLocalSnapshotsPruningDelay(int localSnapshotsPruningDelay) {
-        this.localSnapshotsPruningDelay = localSnapshotsPruningDelay;
-    }
-
-    @Override
-    public int getLocalSnapshotsIntervalSynced() {
-        return this.localSnapshotsIntervalSynced;
-    }
-
-    @JsonProperty
-    @Parameter(names = {"--local-snapshots-interval-synced"}, description = SnapshotConfig.Descriptions.LOCAL_SNAPSHOTS_INTERVAL_SYNCED)
-    protected void setLocalSnapshotsIntervalSynced(int localSnapshotsIntervalSynced) {
-        this.localSnapshotsIntervalSynced = localSnapshotsIntervalSynced;
-    }
-
-    @Override
-    public int getLocalSnapshotsIntervalUnsynced() {
-        return this.localSnapshotsIntervalUnsynced;
-    }
-
-    @JsonProperty
-    @Parameter(names = {"--local-snapshots-interval-unsynced"}, description = SnapshotConfig.Descriptions.LOCAL_SNAPSHOTS_INTERVAL_UNSYNCED)
-    protected void setLocalSnapshotsIntervalUnsynced(int localSnapshotsIntervalUnsynced) {
-        this.localSnapshotsIntervalUnsynced = localSnapshotsIntervalUnsynced;
-    }
-
-    @Override
-    public int getLocalSnapshotsDepth() {
-        return this.localSnapshotsDepth;
-    }
-
-    @JsonProperty
-    @Parameter(names = {"--local-snapshots-depth"}, description = SnapshotConfig.Descriptions.LOCAL_SNAPSHOTS_DEPTH)
-    protected void setLocalSnapshotsDepth(int localSnapshotsDepth) {
-        this.localSnapshotsDepth = localSnapshotsDepth;
-    }
-
-    @Override
-    public String getLocalSnapshotsBasePath() {
-        return this.localSnapshotsBasePath;
-    }
-
-    @JsonProperty
-    @Parameter(names = {"--local-snapshots-base-path"}, description = SnapshotConfig.Descriptions.LOCAL_SNAPSHOTS_BASE_PATH)
-    protected void setLocalSnapshotsBasePath(String localSnapshotsBasePath) {
-        this.localSnapshotsBasePath = localSnapshotsBasePath;
-    }
-
-    @Override
-    public long getSnapshotTime() {
-        return Defaults.GLOBAL_SNAPSHOT_TIME;
-    }
-
-    @Override
-    public String getSnapshotFile() {
-        return Defaults.SNAPSHOT_FILE;
-    }
-
-    @Override
-    public String getSnapshotSignatureFile() {
-        return Defaults.SNAPSHOT_SIG_FILE;
-    }
-
-    @Override
-    public String getPreviousEpochSpentAddressesFiles() {
-        return Defaults.PREVIOUS_EPOCHS_SPENT_ADDRESSES_TXT;
-    }
-
-    @Override
-    public int getMilestoneStartIndex() {
-        return Defaults.MILESTONE_START_INDEX;
-    }
-
-    @Override
-    public int getNumberOfKeysInMilestone() {
-        return Defaults.NUM_KEYS_IN_MILESTONE;
-    }
-
     @Override
     public boolean isZmqEnabled() {
         return zmqEnabled;
@@ -634,16 +506,6 @@ public abstract class BaseIotaConfig implements IotaConfig {
     @Parameter(names = "--cache-size", description = NetworkConfig.Descriptions.CACHE_SIZE_BYTES)
     protected void setCacheSizeBytes(int cacheSizeBytes) {
         this.cacheSizeBytes = cacheSizeBytes;
-    }
-
-    @Override
-    public String getCoordinator() {
-        return Defaults.COORDINATOR_ADDRESS;
-    }
-
-    @Override
-    public boolean isDontValidateTestnetMilestoneSig() {
-        return false;
     }
 
     @Override
@@ -745,29 +607,10 @@ public abstract class BaseIotaConfig implements IotaConfig {
         //TipSel
         int MAX_DEPTH = 15;
         double ALPHA = 0.001d;
+        int MAX_ANALYZED_TXS = 20_000;
 
         //PearlDiver
         int POW_THREADS = 0;
 
-        //Coo
-        String COORDINATOR_ADDRESS =
-                "KPWCHICGJZXKE9GSUDXZYUAPLHAKAHYHDXNPHENTERYMMBQOPSQIDENXKLKCEYCPVTZQLEEJVYJZV9BWU";
-
-        //Snapshot
-        boolean LOCAL_SNAPSHOTS_ENABLED = true;
-        boolean LOCAL_SNAPSHOTS_PRUNING_ENABLED = true;
-        int LOCAL_SNAPSHOTS_PRUNING_DELAY = 50000;
-        int LOCAL_SNAPSHOTS_INTERVAL_SYNCED = 10;
-        int LOCAL_SNAPSHOTS_INTERVAL_UNSYNCED = 1000;
-        String LOCAL_SNAPSHOTS_BASE_PATH = "mainnet";
-        int LOCAL_SNAPSHOTS_DEPTH = 100;
-        String SNAPSHOT_FILE = "/snapshotMainnet.txt";
-        String SNAPSHOT_SIG_FILE = "/snapshotMainnet.sig";
-        String PREVIOUS_EPOCHS_SPENT_ADDRESSES_TXT =
-                "/previousEpochsSpentAddresses1.txt /previousEpochsSpentAddresses2.txt";
-        long GLOBAL_SNAPSHOT_TIME = 1537203600;
-        int MILESTONE_START_INDEX = 774_805;
-        int NUM_KEYS_IN_MILESTONE = 20;
-        int MAX_ANALYZED_TXS = 20_000;
     }
 }

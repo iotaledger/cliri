@@ -2,7 +2,6 @@ package com.iota.iri.service;
 
 import com.iota.iri.*;
 import com.iota.iri.conf.APIConfig;
-import com.iota.iri.conf.ConsensusConfig;
 import com.iota.iri.controllers.AddressViewModel;
 import com.iota.iri.controllers.BundleViewModel;
 import com.iota.iri.controllers.TagViewModel;
@@ -87,7 +86,6 @@ public class API {
     
     private static final Logger log = LoggerFactory.getLogger(API.class);
     private final IXI ixi;
-    private final int milestoneStartIndex;
 
     private Undertow server;
 
@@ -136,7 +134,6 @@ public class API {
         maxGetTrytes = configuration.getMaxGetTrytes();
         maxBodyLength = configuration.getMaxBodyLength();
         testNet = configuration.isTestnet();
-        milestoneStartIndex = ((ConsensusConfig) configuration).getMilestoneStartIndex();
 
         previousEpochsSpentAddresses = new ConcurrentHashMap<>();
 
@@ -172,7 +169,6 @@ public class API {
      *                     Currently this exception is caught in {@link #readPreviousEpochsSpentAddresses(boolean)}
      */
     public void init() throws IOException {
-        readPreviousEpochsSpentAddresses(testNet);
 
         APIConfig configuration = instance.configuration;
         final int apiPort = configuration.getPort();
@@ -208,37 +204,6 @@ public class API {
         server.start();
     }
 
-    /**
-     * Read the spend addresses from the previous epoch. Used in {@link #wasAddressSpentFrom(Hash)}.
-     * If this fails, a log is printed. The API will continue to initialize.
-     * 
-     * @param isTestnet If this node is running on the testnet. If this is <tt>true</tt>, nothing is loaded.
-     * @throws IOException If we are not on the testnet and previousEpochsSpentAddresses files cannot be found. 
-     *                     Currently this exception is caught in {@link #readPreviousEpochsSpentAddresses(boolean)}
-     */
-    private void readPreviousEpochsSpentAddresses(boolean isTestnet) throws IOException {
-        if (isTestnet) {
-            return;
-        }
-
-        String[] previousEpochsSpentAddressesFiles = instance
-                .configuration
-                .getPreviousEpochSpentAddressesFiles()
-                .split(" ");
-        
-        for (String previousEpochsSpentAddressesFile : previousEpochsSpentAddressesFiles) {
-            InputStream in = Snapshot.class.getResourceAsStream(previousEpochsSpentAddressesFile);
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    this.previousEpochsSpentAddresses.put(HashFactory.ADDRESS.create(line), true);
-                }
-            } catch (Exception e) {
-                log.error("Failed to load resource: {}.", previousEpochsSpentAddressesFile, e);
-            }
-        }
-    }
-    
     /**
      * Sends the API response back as JSON to the requester. 
      * Status code of the HTTP request is also set according to the type of response.
@@ -662,19 +627,14 @@ public class API {
 
         // Transactions are valid, lets check ledger consistency
         if (state) {
-            instance.milestoneTracker.latestSnapshot.rwlock.readLock().lock();
-            try {
-                WalkValidatorImpl walkValidator = new WalkValidatorImpl(instance.tangle, instance.ledgerValidator,
-                        instance.milestoneTracker, instance.configuration);
-                for (Hash transaction : transactions) {
-                    if (!walkValidator.isValid(transaction)) {
-                        state = false;
-                        info = "tails are not consistent (would lead to inconsistent ledger state or below max depth)";
-                        break;
-                    }
+            WalkValidatorImpl walkValidator = new WalkValidatorImpl(instance.tangle,
+                    instance.ledgerValidator, instance.configuration);
+            for (Hash transaction : transactions) {
+                if (!walkValidator.isValid(transaction)) {
+                    state = false;
+                    info = "tails are not consistent (would lead to inconsistent ledger state or below max depth)";
+                    break;
                 }
-            } finally {
-                instance.milestoneTracker.latestSnapshot.rwlock.readLock().unlock();
             }
         }
 
@@ -688,7 +648,7 @@ public class API {
      * @return <tt>false</tt> if we received at least a solid milestone, otherwise <tt>true</tt>
      */
     public boolean invalidSubtangleStatus() {
-        return (instance.milestoneTracker.latestSolidSubtangleMilestoneIndex == milestoneStartIndex);
+        return false;
     }
     
     /**
@@ -957,18 +917,14 @@ public class API {
                 Runtime.getRuntime().freeMemory(), 
                 System.getProperty("java.version"), 
                 Runtime.getRuntime().maxMemory(),
-                Runtime.getRuntime().totalMemory(), 
-                instance.milestoneTracker.latestMilestone, instance.milestoneTracker.latestMilestoneIndex,
-                instance.milestoneTracker.latestSolidSubtangleMilestone, 
-                instance.milestoneTracker.latestSolidSubtangleMilestoneIndex, 
-                instance.milestoneTracker.milestoneStartIndex,
-                instance.node.howManyNeighbors(), 
+                Runtime.getRuntime().totalMemory(),
+                instance.node.howManyNeighbors(),
                 instance.node.queuedTransactionsSize(),
                 System.currentTimeMillis(), 
                 instance.tipsViewModel.size(),
                 instance.transactionRequester.numberOfTransactionsToRequest(),
-                features,
-                instance.configuration.getCoordinator());
+                features
+        );
     }
 
     /**
@@ -1353,64 +1309,7 @@ public class API {
                                                   List<String> tips, 
                                                   int threshold) throws Exception {
 
-        if (threshold <= 0 || threshold > 100) {
-            return ErrorResponse.create("Illegal 'threshold'");
-        }
-
-        final List<Hash> addressList = addresses.stream()
-                .map(address -> (HashFactory.ADDRESS.create(address)))
-                .collect(Collectors.toCollection(LinkedList::new));
-        
-        final List<Hash> hashes;
-        final Map<Hash, Long> balances = new HashMap<>();
-        instance.milestoneTracker.latestSnapshot.rwlock.readLock().lock();
-        final int index = instance.milestoneTracker.latestSnapshot.index();
-        
-        if (tips == null || tips.size() == 0) {
-            hashes = Collections.singletonList(instance.milestoneTracker.latestSolidSubtangleMilestone);
-        } else {
-            hashes = tips.stream()
-                    .map(tip -> (HashFactory.TRANSACTION.create(tip)))
-                    .collect(Collectors.toCollection(LinkedList::new));
-        }
-        
-        try {
-            // Get the balance for each address at the last snapshot
-            for (final Hash address : addressList) {
-                Long value = instance.milestoneTracker.latestSnapshot.getBalance(address);
-                if (value == null) {
-                    value = 0L;
-                }
-                balances.put(address, value);
-            }
-
-            final Set<Hash> visitedHashes = new HashSet<>();
-            final Map<Hash, Long> diff = new HashMap<>();
-
-            // Calculate the difference created by the non-verified transactions which tips approve.
-            // This difference is put in a map with address -> value changed
-            for (Hash tip : hashes) {
-                if (!TransactionViewModel.exists(instance.tangle, tip)) {
-                    return ErrorResponse.create("Tip not found: " + tip.toString());
-                }
-                if (!instance.ledgerValidator.updateDiff(visitedHashes, diff, tip)) {
-                    return ErrorResponse.create("Tips are not consistent");
-                }
-            }
-            
-            // Update the found balance according to 'diffs' balance changes
-            diff.forEach((key, value) -> balances.computeIfPresent(key, (hash, aLong) -> value + aLong));
-        } finally {
-            instance.milestoneTracker.latestSnapshot.rwlock.readLock().unlock();
-        }
-
-        final List<String> elements = addressList.stream()
-                .map(address -> balances.get(address).toString())
-                .collect(Collectors.toCollection(LinkedList::new));
-
-        return GetBalancesResponse.create(elements, hashes.stream()
-                .map(h -> h.toString())
-                .collect(Collectors.toList()), index);
+        return ErrorResponse.create("");
     }
 
     private static int counter_PoW = 0;
