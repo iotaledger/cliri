@@ -16,7 +16,6 @@ import com.iota.iri.model.persistables.Transaction;
 import com.iota.iri.network.Neighbor;
 import com.iota.iri.service.dto.*;
 import com.iota.iri.service.tipselection.TipSelector;
-import com.iota.iri.service.tipselection.impl.WalkValidatorImpl;
 import com.iota.iri.utils.Converter;
 import com.iota.iri.utils.IotaIOUtils;
 import com.iota.iri.utils.MapIdentityManager;
@@ -500,8 +499,6 @@ public class API {
      **/
     private AbstractResponse wereAddressesSpentFromStatement(List<String> addresses) throws Exception {
         throw new NotImplementedException(NOT_SUPPORTED);
-
-
     }
 
 
@@ -831,9 +828,7 @@ public class API {
     private AbstractResponse getInclusionStatesStatement(
             final List<String> transactions, 
             final List<String> tips) throws Exception {
-
         throw new NotImplementedException(NOT_SUPPORTED);
-
     }
     /**
       * <p>
@@ -1032,7 +1027,6 @@ public class API {
     private AbstractResponse getBalancesStatement(List<String> addresses, 
                                                   List<String> tips, 
                                                   int threshold) throws Exception {
-
         throw new NotImplementedException(NOT_SUPPORTED);
     }
 
