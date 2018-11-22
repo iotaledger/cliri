@@ -5,10 +5,10 @@
 
     <groupId>com.iota</groupId>
     <artifactId>iri</artifactId>
-    <version>1.5.5</version>
+    <version>0.1.0</version>
 
-    <name>IRI</name>
-    <description>IOTA Reference Implementation</description>
+    <name>CLIRI</name>
+    <description>Coo-Less IOTA Reference Implementation</description>
 
     <scm>
         <url>https://github.com/iotaledger/cliri/</url>
