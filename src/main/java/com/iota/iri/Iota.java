@@ -72,13 +72,11 @@ public class Iota {
     public final TipSelector tipsSelector;
 
     /**
-     * Initializes the latest snapshot and then creates all services needed to run an IOTA node.
+     * Creates all services needed to run an IOTA node.
      * 
      * @param configuration Information about how this node will be configured.
-     * @throws IOException If the Snapshot fails to initialize. 
-     *                     This can happen if the snapshot signature is invalid or the file cannot be read.
      */
-    public Iota(IotaConfig configuration) throws IOException {
+    public Iota(IotaConfig configuration) {
         this.configuration = configuration;
         tangle = new Tangle();
         messageQ = MessageQ.createWith(configuration);
@@ -110,9 +108,6 @@ public class Iota {
             rescanDb();
         }
 
-        if (configuration.isRevalidate()) {
-            tangle.clearMetadata(com.iota.iri.model.persistables.Transaction.class);
-        }
         transactionValidator.init(configuration.isTestnet(), configuration.getMwm());
         tipsSolidifier.init();
         transactionRequester.init(configuration.getpRemoveRequest());

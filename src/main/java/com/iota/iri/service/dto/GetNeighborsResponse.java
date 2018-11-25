@@ -108,7 +108,7 @@ public class GetNeighborsResponse extends AbstractResponse {
 
         /**
          * Stale transactions your neighbor has sent you.
-         * These are transactions with a timestamp older than your latest snapshot.
+         * These are transactions with a negative timestamp.
          *
          * @return the number
          */

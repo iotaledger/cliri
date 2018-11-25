@@ -130,8 +130,6 @@ public class ConfigFactoryTest {
         properties.setProperty("TESTNET", testnet);
         properties.setProperty("ZMQ_ENABLED", " TRUE ");
         properties.setProperty("MWM", "9");
-        properties.setProperty("SNAPSHOT_FILE", "conf/snapshot.txt");
-        properties.setProperty("COORDINATOR", "  NPCRMHDOMU9QHFFBKFCWFHFJNNQDRNDOGVPEVDVGWKHFUFEXLWJBHXDJFKQGYFRDZBQIFDSJMUCCQVICI ");
         properties.setProperty("MILESTONE_START_INDEX", "2 ");
         properties.setProperty("KEYS_IN_MILESTONE", "10");
 

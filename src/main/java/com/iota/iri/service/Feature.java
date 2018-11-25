@@ -18,13 +18,7 @@ public enum Feature {
      * This node allows doing proof of work for you.
      */
     PROOF_OF_WORK("RemotePOW"),
-    
-    /**
-     * This node has enabled snapshot pruning
-     * It will most likely just contain "recent" transactions, as defined in the nodes config
-     */
-    SNAPSHOT_PRUNING("snapshotPruning"),
-    
+
     /**
      * This node automatically tries to get the new IP from neighbors with dynamic IPs
      * 
