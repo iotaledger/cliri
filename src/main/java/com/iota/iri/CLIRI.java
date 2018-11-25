@@ -6,6 +6,10 @@ import com.iota.iri.conf.ConfigFactory;
 import com.iota.iri.conf.IotaConfig;
 import com.iota.iri.service.API;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 
@@ -13,20 +17,16 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-
 /**
  * 
- * Main IOTA Reference Implementation (IRI) starting class.
+ * Main IOTA Reference Implementation (CLIRI) starting class.
  * <p>
- *     The IRI software enables the Tangle to operate. Individuals can run IRI to operates Nodes.
- *     The Node running the IRI software enables your device to communicate with neighbors 
+ *     The CLIRI software enables the Tangle to operate. Individuals can run CLIRI to operates Nodes.
+ *     The Node running the CLIRI software enables your device to communicate with neighbors
  *     in the peer-to-peer network that the Tangle operates on. 
  * </p>
  * <p>
- *     IRI implements all the core functionality necessary for participating in an IOTA network as a full node.
+ *     CLIRI implements all the core functionality necessary for participating in an IOTA network as a full node.
  *     This includes, but is not limited to:
  *     <ul>
  *         <li>Receiving and broadcasting transactions through TCP and UDP.</li>
@@ -38,26 +38,26 @@ import java.util.Arrays;
  * 
  * @see <a href="https://docs.iota.org/iri">Online documentation on iri</a>
  */
-public class IRI {
+public class CLIRI {
 
-    public static final String MAINNET_NAME = "IRI";
-    public static final String TESTNET_NAME = "IRI Testnet";
+    public static final String MAINNET_NAME = "CLIRI";
+    public static final String TESTNET_NAME = "CLIRI Testnet";
     public static final String VERSION = "0.1.0";
 
     /**
-     * The entry point of IRI.
-     * Starts by configuring the logging settings, then proceeds to {@link IRILauncher#main(String[])}
+     * The entry point of CLIRI.
+     * Starts by configuring the logging settings, then proceeds to {@link CLIRILauncher#main(String[])}
      * The log level is set to INFO by default.
      * 
      * @param args Configuration arguments. See {@link BaseIotaConfig} for a list of all options.
-     * @throws Exception If we fail to start the IRI launcher.
+     * @throws Exception If we fail to start the CLIRI launcher.
      */
     public static void main(String[] args) throws Exception {
         // Logging is configured first before any references to Logger or LoggerFactory.
-        // Any public method or field accessors needed in IRI should be put in IRI and then delegate to IRILauncher. 
+        // Any public method or field accessors needed in CLIRI should be put in CLIRI and then delegate to CLIRILauncher.
         // That ensures that future code does not need to know about this setup.
         configureLogging();
-        IRILauncher.main(args);
+        CLIRILauncher.main(args);
     }
 
     private static void configureLogging() {
@@ -85,15 +85,15 @@ public class IRI {
         }
     }
 
-    private static class IRILauncher {
-        private static final Logger log = LoggerFactory.getLogger(IRILauncher.class);
+    private static class CLIRILauncher {
+        private static final Logger log = LoggerFactory.getLogger(CLIRILauncher.class);
 
         public static Iota iota;
         public static API api;
         public static IXI ixi;
 
         /**
-         * Starts IRI. Setup is as follows:
+         * Starts CLIRI. Setup is as follows:
          * <ul>
          *     <li>Load the configuration.</li>
          *     <li>Create {@link Iota}, {@link IXI} and {@link API}.</li>

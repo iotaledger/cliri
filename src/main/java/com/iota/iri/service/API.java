@@ -1,6 +1,8 @@
 package com.iota.iri.service;
 
-import com.iota.iri.*;
+import com.iota.iri.CLIRI;
+import com.iota.iri.IXI;
+import com.iota.iri.Iota;
 import com.iota.iri.conf.APIConfig;
 import com.iota.iri.controllers.AddressViewModel;
 import com.iota.iri.controllers.BundleViewModel;
@@ -20,6 +22,21 @@ import com.iota.iri.utils.Converter;
 import com.iota.iri.utils.IotaIOUtils;
 import com.iota.iri.utils.MapIdentityManager;
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.security.InvalidAlgorithmParameterException;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -29,21 +46,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xnio.channels.StreamSinkChannel;
 import org.xnio.streams.ChannelInputStream;
-
-import java.io.*;
-import java.net.InetSocketAddress;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.security.InvalidAlgorithmParameterException;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import io.undertow.Undertow;
 import io.undertow.security.api.AuthenticationMechanism;
@@ -775,8 +777,8 @@ public class API {
       * @return {@link com.iota.iri.service.dto.GetNodeInfoResponse}
       **/
     private AbstractResponse getNodeInfoStatement(){
-        String name = instance.configuration.isTestnet() ? IRI.TESTNET_NAME : IRI.MAINNET_NAME;
-        return GetNodeInfoResponse.create(name, IRI.VERSION, 
+        String name = instance.configuration.isTestnet() ? CLIRI.TESTNET_NAME : CLIRI.MAINNET_NAME;
+        return GetNodeInfoResponse.create(name, CLIRI.VERSION,
                 Runtime.getRuntime().availableProcessors(),
                 Runtime.getRuntime().freeMemory(), 
                 System.getProperty("java.version"), 
