@@ -134,7 +134,6 @@ public class ConfigFactoryTest {
         properties.setProperty("COORDINATOR", "  NPCRMHDOMU9QHFFBKFCWFHFJNNQDRNDOGVPEVDVGWKHFUFEXLWJBHXDJFKQGYFRDZBQIFDSJMUCCQVICI ");
         properties.setProperty("MILESTONE_START_INDEX", "2 ");
         properties.setProperty("KEYS_IN_MILESTONE", "10");
-        properties.setProperty("MAX_DEPTH", "1000");
 
         File configFile = folder.newFile("myCustomIotaConfig.ini");
         FileOutputStream fileOutputStream = new FileOutputStream(configFile);

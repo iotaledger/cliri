@@ -22,6 +22,16 @@ public interface EntryPointSelector {
      * @return  Entry point for walk method
      * @throws Exception If DB fails to retrieve transactions
      */
-    Hash getEntryPoint(int depth)throws Exception;
+    Hash getEntryPoint(int depth) throws Exception;
 
+    /**
+     *get an entryPoint for tip selection
+     *
+     *Uses depth to determine the entry point for
+     *the random walk.
+     *
+     * @return  Entry point for walk method
+     * @throws Exception If DB fails to retrieve transactions
+     */
+    Hash getEntryPoint() throws Exception;
 }

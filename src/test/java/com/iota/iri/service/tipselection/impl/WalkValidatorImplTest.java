@@ -2,14 +2,14 @@ package com.iota.iri.service.tipselection.impl;
 
 import com.iota.iri.LedgerValidator;
 import com.iota.iri.TransactionTestUtils;
-import com.iota.iri.TransactionValidator;
-import com.iota.iri.conf.MainnetConfig;
-import com.iota.iri.conf.TipSelConfig;
 import com.iota.iri.controllers.TransactionViewModel;
-import com.iota.iri.controllers.TransactionViewModelTest;
 import com.iota.iri.model.Hash;
 import com.iota.iri.storage.Tangle;
 import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
+
+import java.util.HashMap;
+import java.util.HashSet;
+
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -20,21 +20,15 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import java.util.HashMap;
-import java.util.HashSet;
-
 @RunWith(MockitoJUnitRunner.class)
 public class WalkValidatorImplTest {
 
     private static final TemporaryFolder dbFolder = new TemporaryFolder();
     private static final TemporaryFolder logFolder = new TemporaryFolder();
     private static Tangle tangle;
-    private TipSelConfig config = new MainnetConfig();
     @Mock
     private LedgerValidator ledgerValidator;
-    @Mock
-    private TransactionValidator transactionValidator;
-    
+
     @AfterClass
     public static void tearDown() throws Exception {
         tangle.shutdown();
@@ -53,7 +47,6 @@ public class WalkValidatorImplTest {
 
     @Test
     public void shouldPassValidation() throws Exception {
-        int depth = 15;
         TransactionViewModel tx = TransactionTestUtils.createBundleHead(0);
         tx.updateSolid(true);
         tx.store(tangle);
@@ -61,13 +54,12 @@ public class WalkValidatorImplTest {
         Mockito.when(ledgerValidator.updateDiff(new HashSet<>(), new HashMap<>(), hash))
                 .thenReturn(true);
 
-        WalkValidatorImpl walkValidator = new WalkValidatorImpl(tangle, ledgerValidator, config);
+        WalkValidatorImpl walkValidator = new WalkValidatorImpl(tangle, ledgerValidator);
         Assert.assertTrue("Validation failed", walkValidator.isValid(hash));
     }
 
     @Test
     public void failOnTxType() throws Exception {
-        int depth = 15;
         TransactionViewModel tx = TransactionTestUtils.createBundleHead(0);
         tx.store(tangle);
         Hash hash = tx.getTrunkTransactionHash();
@@ -75,7 +67,7 @@ public class WalkValidatorImplTest {
         Mockito.when(ledgerValidator.updateDiff(new HashSet<>(), new HashMap<>(), hash))
                 .thenReturn(true);
 
-        WalkValidatorImpl walkValidator = new WalkValidatorImpl(tangle, ledgerValidator, config);
+        WalkValidatorImpl walkValidator = new WalkValidatorImpl(tangle, ledgerValidator);
         Assert.assertFalse("Validation succeded but should have failed since tx is missing", walkValidator.isValid(hash));
     }
 
@@ -88,7 +80,7 @@ public class WalkValidatorImplTest {
         Mockito.when(ledgerValidator.updateDiff(new HashSet<>(), new HashMap<>(), hash))
                 .thenReturn(true);
 
-        WalkValidatorImpl walkValidator = new WalkValidatorImpl(tangle, ledgerValidator, config);
+        WalkValidatorImpl walkValidator = new WalkValidatorImpl(tangle, ledgerValidator);
         Assert.assertFalse("Validation succeded but should have failed since we are not on a tail", walkValidator.isValid(hash));
     }
 
@@ -101,7 +93,7 @@ public class WalkValidatorImplTest {
         Mockito.when(ledgerValidator.updateDiff(new HashSet<>(), new HashMap<>(), hash))
                 .thenReturn(true);
         
-        WalkValidatorImpl walkValidator = new WalkValidatorImpl(tangle, ledgerValidator, config);
+        WalkValidatorImpl walkValidator = new WalkValidatorImpl(tangle, ledgerValidator);
         Assert.assertFalse("Validation succeded but should have failed since tx is not solid",
                 walkValidator.isValid(hash));
     }
@@ -114,7 +106,7 @@ public class WalkValidatorImplTest {
         tx.updateSolid(true);
         Mockito.when(ledgerValidator.updateDiff(new HashSet<>(), new HashMap<>(), hash))
                 .thenReturn(false);
-        WalkValidatorImpl walkValidator = new WalkValidatorImpl(tangle, ledgerValidator, config);
+        WalkValidatorImpl walkValidator = new WalkValidatorImpl(tangle, ledgerValidator);
         Assert.assertFalse("Validation succeded but should have failed due to inconsistent ledger state",
                 walkValidator.isValid(hash));
     }

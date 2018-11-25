@@ -320,7 +320,6 @@ public class ConfigTest {
         MAX_REQUESTS_LIST,
         MAX_GET_TRYTES,
         MAX_BODY_LENGTH,
-        MAX_DEPTH,
         MWM,
         ZMQ_ENABLED,
         ZMQ_PORT,
@@ -332,7 +331,6 @@ public class ConfigTest {
         TRANSACTION_PACKET_SIZE,
         REQUEST_HASH_SIZE,
         TIPSELECTION_ALPHA,
-        BELOW_MAX_DEPTH_TRANSACTION_LIMIT,
     }
 
 }
