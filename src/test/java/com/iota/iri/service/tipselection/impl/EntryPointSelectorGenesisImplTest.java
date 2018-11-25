@@ -11,7 +11,7 @@ public class EntryPointSelectorGenesisImplTest {
     public void testEntryPointBWithTangleData() throws Exception {
 
         EntryPointSelector entryPointSelector = new EntryPointSelectorGenesisImpl();
-        Hash entryPoint = entryPointSelector.getEntryPoint(10);
+        Hash entryPoint = entryPointSelector.getEntryPoint();
 
         Assert.assertEquals("The entry point should be the milestone in the Tangle", Hash.NULL_HASH, entryPoint);
     }

@@ -42,7 +42,7 @@ public class NodeIntegrationTests {
         Iota iotaNodes[] = new Iota[count];
         API api[] = new API[count];
         IXI ixi[] = new IXI[count];
-        Thread cooThread, master;
+        Thread master;
         TemporaryFolder[] folders = new TemporaryFolder[count*2];
         for(int i = 0; i < count; i++) {
             folders[i*2] = new TemporaryFolder();

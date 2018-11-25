@@ -9,31 +9,20 @@ import com.iota.iri.network.TransactionRequester;
 import com.iota.iri.network.UDPReceiver;
 import com.iota.iri.network.replicator.Replicator;
 import com.iota.iri.service.TipsSolidifier;
-import com.iota.iri.service.tipselection.EntryPointSelector;
-import com.iota.iri.service.tipselection.RatingCalculator;
-import com.iota.iri.service.tipselection.TailFinder;
-import com.iota.iri.service.tipselection.TipSelector;
-import com.iota.iri.service.tipselection.Walker;
-import com.iota.iri.service.tipselection.impl.CumulativeWeightCalculator;
-import com.iota.iri.service.tipselection.impl.EntryPointSelectorGenesisImpl;
-import com.iota.iri.service.tipselection.impl.TailFinderImpl;
-import com.iota.iri.service.tipselection.impl.TipSelectorImpl;
-import com.iota.iri.service.tipselection.impl.WalkerAlpha;
-import com.iota.iri.storage.Indexable;
-import com.iota.iri.storage.Persistable;
-import com.iota.iri.storage.PersistenceProvider;
-import com.iota.iri.storage.Tangle;
-import com.iota.iri.storage.ZmqPublishProvider;
+import com.iota.iri.service.tipselection.*;
+import com.iota.iri.service.tipselection.impl.*;
+import com.iota.iri.storage.*;
 import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
 import com.iota.iri.utils.Pair;
 import com.iota.iri.zmq.MessageQ;
-import org.apache.commons.lang3.NotImplementedException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.List;
+
+import org.apache.commons.lang3.NotImplementedException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 
@@ -83,13 +72,11 @@ public class Iota {
     public final TipSelector tipsSelector;
 
     /**
-     * Initializes the latest snapshot and then creates all services needed to run an IOTA node.
+     * Creates all services needed to run an IOTA node.
      * 
      * @param configuration Information about how this node will be configured.
-     * @throws IOException If the Snapshot fails to initialize. 
-     *                     This can happen if the snapshot signature is invalid or the file cannot be read.
      */
-    public Iota(IotaConfig configuration) throws IOException {
+    public Iota(IotaConfig configuration) {
         this.configuration = configuration;
         tangle = new Tangle();
         messageQ = MessageQ.createWith(configuration);
@@ -121,9 +108,6 @@ public class Iota {
             rescanDb();
         }
 
-        if (configuration.isRevalidate()) {
-            tangle.clearMetadata(com.iota.iri.model.persistables.Transaction.class);
-        }
         transactionValidator.init(configuration.isTestnet(), configuration.getMwm());
         tipsSolidifier.init();
         transactionRequester.init(configuration.getpRemoveRequest());
@@ -192,7 +176,6 @@ public class Iota {
         RatingCalculator ratingCalculator = new CumulativeWeightCalculator(tangle);
         TailFinder tailFinder = new TailFinderImpl(tangle);
         Walker walker = new WalkerAlpha(tailFinder, tangle, messageQ, new SecureRandom(), config);
-        return new TipSelectorImpl(tangle, ledgerValidator, entryPointSelector, ratingCalculator,
-                walker, config);
+        return new TipSelectorImpl(tangle, ledgerValidator, entryPointSelector, ratingCalculator, walker);
     }
 }

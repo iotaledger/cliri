@@ -524,7 +524,7 @@ public class Node {
             if (!requestedHash.equals(Hash.NULL_HASH) && rnd.nextDouble() < configuration.getpPropagateRequest()) {
                 //request is an actual transaction and missing in request queue add it.
                 try {
-                    transactionRequester.requestTransaction(requestedHash, false);
+                    transactionRequester.requestTransaction(requestedHash);
 
                 } catch (Exception e) {
                     log.error("Error adding transaction to request.", e);
@@ -567,7 +567,7 @@ public class Node {
 
         synchronized (sendingPacket) {
             System.arraycopy(transactionViewModel.getBytes(), 0, sendingPacket.getData(), 0, TransactionViewModel.SIZE);
-            Hash hash = transactionRequester.transactionToRequest(rnd.nextDouble() < configuration.getpSelectMilestoneChild());
+            Hash hash = transactionRequester.transactionToRequest();
             System.arraycopy(hash != null ? hash.bytes() : transactionViewModel.getHash().bytes(), 0,
                     sendingPacket.getData(), TransactionViewModel.SIZE, reqHashSize);
             neighbor.send(sendingPacket);

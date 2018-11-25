@@ -1,7 +1,6 @@
 package com.iota.iri.service.tipselection.impl;
 
 import com.iota.iri.LedgerValidator;
-import com.iota.iri.conf.TipSelConfig;
 import com.iota.iri.model.Hash;
 import com.iota.iri.model.HashId;
 import com.iota.iri.service.tipselection.*;
@@ -29,14 +28,12 @@ public class TipSelectorImpl implements TipSelector {
 
     private final LedgerValidator ledgerValidator;
     private final Tangle tangle;
-    private final TipSelConfig config;
 
     public TipSelectorImpl(Tangle tangle,
                            LedgerValidator ledgerValidator,
                            EntryPointSelector entryPointSelector,
                            RatingCalculator ratingCalculator,
-                           Walker walkerAlpha,
-                           TipSelConfig config) {
+                           Walker walkerAlpha) {
 
         this.entryPointSelector = entryPointSelector;
         this.ratingCalculator = ratingCalculator;
@@ -46,7 +43,6 @@ public class TipSelectorImpl implements TipSelector {
         //used by walkValidator
         this.ledgerValidator = ledgerValidator;
         this.tangle = tangle;
-        this.config = config;
     }
 
     /**
@@ -60,21 +56,20 @@ public class TipSelectorImpl implements TipSelector {
      *     otherwise start again from <CODE>entryPoint</CODE>.
      * <li><b>Validate:</b> check that both tips are not contradicting.
      * </ol>
-     * @param depth  The depth that the transactions will be found from.
      * @param reference  An optional transaction hash to be referenced by tips.
      * @return  Transactions to approve
      * @throws Exception If DB fails to retrieve transactions
      */
     @Override
-    public List<Hash> getTransactionsToApprove(int depth, Optional<Hash> reference) throws Exception {
+    public List<Hash> getTransactionsToApprove(Optional<Hash> reference) throws Exception {
 
         //preparation
-        Hash entryPoint = entryPointSelector.getEntryPoint(depth);
+        Hash entryPoint = entryPointSelector.getEntryPoint();
         UnIterableMap<HashId, Integer> rating = ratingCalculator.calculate(entryPoint);
 
         //random walk
         List<Hash> tips = new LinkedList<>();
-        WalkValidator walkValidator = new WalkValidatorImpl(tangle, ledgerValidator, config);
+        WalkValidator walkValidator = new WalkValidatorImpl(tangle, ledgerValidator);
         Hash tip = walker.walk(entryPoint, rating, walkValidator);
         tips.add(tip);
 

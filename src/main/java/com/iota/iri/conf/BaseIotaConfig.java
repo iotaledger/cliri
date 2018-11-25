@@ -61,8 +61,6 @@ public abstract class BaseIotaConfig implements IotaConfig {
     //Protocol
     protected double pReplyRandomTip = Defaults.P_REPLY_RANDOM_TIP;
     protected double pDropTransaction = Defaults.P_DROP_TRANSACTION;
-    protected double pSelectMilestoneChild = Defaults.P_SELECT_MILESTONE_CHILD;
-    protected double pSendMilestone = Defaults.P_SEND_MILESTONE;
     protected double pPropagateRequest = Defaults.P_PROPAGATE_REQUEST;
 
     //ZMQ
@@ -75,9 +73,7 @@ public abstract class BaseIotaConfig implements IotaConfig {
 
 
     //Tip Selection
-    protected int maxDepth = Defaults.MAX_DEPTH;
     protected double alpha = Defaults.ALPHA;
-    private int maxAnalyzedTransactions = Defaults.MAX_ANALYZED_TXS;
 
     //PearlDiver
     protected int powThreads = Defaults.POW_THREADS;
@@ -350,18 +346,7 @@ public abstract class BaseIotaConfig implements IotaConfig {
     protected void setMainDb(String mainDb) {
         this.mainDb = mainDb;
     }
-
-    @Override
-    public boolean isRevalidate() {
-        return revalidate;
-    }
-
-    @JsonProperty
-    @Parameter(names = {"--revalidate"}, description = DbConfig.Descriptions.REVALIDATE)
-    protected void setRevalidate(boolean revalidate) {
-        this.revalidate = revalidate;
-    }
-
+    
     @Override
     public boolean isRescanDb() {
         return rescanDb;
@@ -408,17 +393,6 @@ public abstract class BaseIotaConfig implements IotaConfig {
     @Parameter(names = {"--p-drop-transaction"}, description = ProtocolConfig.Descriptions.P_DROP_TRANSACTION)
     protected void setpDropTransaction(double pDropTransaction) {
         this.pDropTransaction = pDropTransaction;
-    }
-
-    @Override
-    public double getpSelectMilestoneChild() {
-        return pSelectMilestoneChild;
-    }
-
-    @JsonProperty
-    @Parameter(names = {"--p-select-milestone"}, description = ProtocolConfig.Descriptions.P_SELECT_MILESTONE)
-    protected void setpSelectMilestoneChild(double pSelectMilestoneChild) {
-        this.pSelectMilestoneChild = pSelectMilestoneChild;
     }
 
     @Override
@@ -509,17 +483,6 @@ public abstract class BaseIotaConfig implements IotaConfig {
     }
 
     @Override
-    public int getMaxDepth() {
-        return maxDepth;
-    }
-
-    @JsonProperty
-    @Parameter(names = "--max-depth", description = TipSelConfig.Descriptions.MAX_DEPTH)
-    protected void setMaxDepth(int maxDepth) {
-        this.maxDepth = maxDepth;
-    }
-
-    @Override
     public double getAlpha() {
         return alpha;
     }
@@ -528,17 +491,6 @@ public abstract class BaseIotaConfig implements IotaConfig {
     @Parameter(names = "--alpha", description = TipSelConfig.Descriptions.ALPHA)
     protected void setAlpha(double alpha) {
         this.alpha = alpha;
-    }
-
-    @Override
-    public int getBelowMaxDepthTransactionLimit() {
-        return maxAnalyzedTransactions;
-    }
-
-    @JsonProperty
-    @Parameter(names = "--max-analyzed-transactions", description = TipSelConfig.Descriptions.BELOW_MAX_DEPTH_TRANSACTION_LIMIT)
-    protected void setBelowMaxDepthTransactionLimit(int maxAnalyzedTransactions) {
-        this.maxAnalyzedTransactions = maxAnalyzedTransactions;
     }
 
     @Override
@@ -586,8 +538,6 @@ public abstract class BaseIotaConfig implements IotaConfig {
         //Protocol
         double P_REPLY_RANDOM_TIP = 0.66d;
         double P_DROP_TRANSACTION = 0d;
-        double P_SELECT_MILESTONE_CHILD = 0.7d;
-        double P_SEND_MILESTONE = 0.02d;
         double P_PROPAGATE_REQUEST = 0.01d;
         int MWM = 14;
         int PACKET_SIZE = 1650;
@@ -605,9 +555,7 @@ public abstract class BaseIotaConfig implements IotaConfig {
         int ZMQ_PORT = 5556;
 
         //TipSel
-        int MAX_DEPTH = 15;
         double ALPHA = 0.001d;
-        int MAX_ANALYZED_TXS = 20_000;
 
         //PearlDiver
         int POW_THREADS = 0;

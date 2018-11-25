@@ -73,43 +73,15 @@ public class TransactionRequesterTest {
     }
 
     @Test
-    public void nonMilestoneCapacityLimited() throws Exception {
+    public void capacityLimited() throws Exception {
         TransactionRequester txReq = new TransactionRequester(tangle, mq);
         int capacity = TransactionRequester.MAX_TX_REQ_QUEUE_SIZE;
         //fill tips list
         for (int i = 0; i < capacity * 2 ; i++) {
             Hash hash = TransactionViewModelTest.getRandomTransactionHash();
-            txReq.requestTransaction(hash,false);
+            txReq.requestTransaction(hash);
         }
         //check that limit wasn't breached
         assertEquals(capacity, txReq.numberOfTransactionsToRequest());
     }
-
-    @Test
-    public void milestoneCapacityNotLimited() throws Exception {
-        TransactionRequester txReq = new TransactionRequester(tangle, mq);
-        int capacity = TransactionRequester.MAX_TX_REQ_QUEUE_SIZE;
-        //fill tips list
-        for (int i = 0; i < capacity * 2 ; i++) {
-            Hash hash = TransactionViewModelTest.getRandomTransactionHash();
-            txReq.requestTransaction(hash,true);
-        }
-        //check that limit was surpassed
-        assertEquals(capacity * 2, txReq.numberOfTransactionsToRequest());
-    }
-
-    @Test
-    public void mixedCapacityLimited() throws Exception {
-        TransactionRequester txReq = new TransactionRequester(tangle, mq);
-        int capacity = TransactionRequester.MAX_TX_REQ_QUEUE_SIZE;
-        //fill tips list
-        for (int i = 0; i < capacity * 4 ; i++) {
-            Hash hash = TransactionViewModelTest.getRandomTransactionHash();
-            txReq.requestTransaction(hash, (i % 2 == 1));
-
-        }
-        //check that limit wasn't breached
-        assertEquals(capacity + capacity * 2, txReq.numberOfTransactionsToRequest());
-    }
-
 }
