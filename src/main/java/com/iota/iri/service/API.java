@@ -91,7 +91,6 @@ public class API {
     private Undertow server;
 
     private final Gson gson = new GsonBuilder().create();
-    private volatile PearlDiver pearlDiver = new PearlDiver();
 
     private final AtomicInteger counter = new AtomicInteger(0);
 
@@ -767,8 +766,7 @@ public class API {
       * @return {@link com.iota.iri.service.dto.AbstractResponse.Emptyness}
       **/
     private AbstractResponse interruptAttachingToTangleStatement(){
-        pearlDiver.cancel();
-        return AbstractResponse.createEmptyResponse();
+        throw new NotImplementedException(NOT_SUPPORTED);
     }
 
     /**
@@ -1088,13 +1086,13 @@ public class API {
       * @param trytes the list of trytes to prepare for network attachment, by doing proof of work.
       * @return The list of transactions in trytes, ready to be broadcast to the network.
       **/
-    public synchronized List<String> attachToTangleStatement(Hash trunkTransaction, Hash branchTransaction,
+    public List<String> attachToTangleStatement(Hash trunkTransaction, Hash branchTransaction,
                                                              int minWeightMagnitude, List<String> trytes) {
         
         final List<TransactionViewModel> transactionViewModels = new LinkedList<>();
 
         Hash prevTransaction = null;
-        pearlDiver = new PearlDiver();
+        PearlDiver pearlDiver = new PearlDiver();
 
         byte[] transactionTrits = Converter.allocateTritsForTrytes(TRYTES_SIZE);
 
@@ -1335,7 +1333,7 @@ public class API {
      * @param address The address to add the message to
      * @param message The message to store
      **/
-    private synchronized AbstractResponse storeMessageStatement(String address, String message) throws Exception {
+    private AbstractResponse storeMessageStatement(String address, String message) throws Exception {
         final List<Hash> txToApprove = getTransactionToApproveTips(Optional.empty());
 
         final int txMessageSize = TransactionViewModel.SIGNATURE_MESSAGE_FRAGMENT_TRINARY_SIZE / 3;
