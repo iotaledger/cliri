@@ -2,14 +2,14 @@ package com.iota.iri.service.tipselection.impl;
 
 import com.iota.iri.LedgerValidator;
 import com.iota.iri.TransactionTestUtils;
-import com.iota.iri.TransactionValidator;
-import com.iota.iri.conf.MainnetConfig;
-import com.iota.iri.conf.TipSelConfig;
 import com.iota.iri.controllers.TransactionViewModel;
-import com.iota.iri.controllers.TransactionViewModelTest;
 import com.iota.iri.model.Hash;
 import com.iota.iri.storage.Tangle;
 import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
+
+import java.util.HashMap;
+import java.util.HashSet;
+
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -19,9 +19,6 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
-
-import java.util.HashMap;
-import java.util.HashSet;
 
 @RunWith(MockitoJUnitRunner.class)
 public class WalkValidatorImplTest {

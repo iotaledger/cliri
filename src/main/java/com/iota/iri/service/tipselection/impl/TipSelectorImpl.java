@@ -1,7 +1,6 @@
 package com.iota.iri.service.tipselection.impl;
 
 import com.iota.iri.LedgerValidator;
-import com.iota.iri.conf.TipSelConfig;
 import com.iota.iri.model.Hash;
 import com.iota.iri.model.HashId;
 import com.iota.iri.service.tipselection.*;
@@ -29,14 +28,12 @@ public class TipSelectorImpl implements TipSelector {
 
     private final LedgerValidator ledgerValidator;
     private final Tangle tangle;
-    private final TipSelConfig config;
 
     public TipSelectorImpl(Tangle tangle,
                            LedgerValidator ledgerValidator,
                            EntryPointSelector entryPointSelector,
                            RatingCalculator ratingCalculator,
-                           Walker walkerAlpha,
-                           TipSelConfig config) {
+                           Walker walkerAlpha) {
 
         this.entryPointSelector = entryPointSelector;
         this.ratingCalculator = ratingCalculator;
@@ -46,7 +43,6 @@ public class TipSelectorImpl implements TipSelector {
         //used by walkValidator
         this.ledgerValidator = ledgerValidator;
         this.tangle = tangle;
-        this.config = config;
     }
 
     /**

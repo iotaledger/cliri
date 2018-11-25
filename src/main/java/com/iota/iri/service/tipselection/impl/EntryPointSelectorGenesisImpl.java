@@ -2,7 +2,7 @@ package com.iota.iri.service.tipselection.impl;
 
 import com.iota.iri.model.Hash;
 import com.iota.iri.service.tipselection.EntryPointSelector;
-import com.iota.iri.storage.Tangle;
+
 import org.apache.commons.lang3.NotImplementedException;
 
 /**
@@ -17,7 +17,7 @@ public class EntryPointSelectorGenesisImpl implements EntryPointSelector {
 
     @Override
     public Hash getEntryPoint(int depth) {
-        throw new NotImplementedException("Not supported in CLIRI");
+        throw new NotImplementedException("Not supported");
     }
 
     @Override
