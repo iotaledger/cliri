@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.iota</groupId>
-    <artifactId>iri</artifactId>
+    <artifactId>cliri</artifactId>
     <version>0.1.0</version>
 
     <name>CLIRI</name>
@@ -254,11 +254,11 @@
                         <configuration>
                             <finalName>iri-${project.version}</finalName>
                             <outputDirectory>${project.basedir}/target</outputDirectory>
-                            <mainClass>com.iota.iri.IRI</mainClass>
+                            <mainClass>com.iota.iri.CLIRI</mainClass>
                             <transformers>
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.iota.iri.IRI</mainClass>
+                                    <mainClass>com.iota.iri.CLIRI</mainClass>
                                 </transformer>
                             </transformers>
                             <filters>

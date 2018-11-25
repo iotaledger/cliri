@@ -1,7 +1,5 @@
 package com.iota.iri.service;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.iota.iri.IXI;
 import com.iota.iri.Iota;
 import com.iota.iri.conf.ConfigFactory;
@@ -11,6 +9,13 @@ import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.crypto.SpongeFactory;
 import com.iota.iri.model.TransactionHash;
 import com.iota.iri.utils.Converter;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.builder.ResponseSpecBuilder;
 import com.jayway.restassured.config.HttpClientConfig;
@@ -18,6 +23,7 @@ import com.jayway.restassured.path.json.JsonPath;
 import com.jayway.restassured.response.Response;
 import com.jayway.restassured.specification.RequestSpecification;
 import com.jayway.restassured.specification.ResponseSpecification;
+
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -25,10 +31,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
@@ -68,7 +70,7 @@ public class APIIntegrationTests {
     public static void setUp() throws Exception {
         if (spawnNode) {
             //configure node parameters
-            log.info("IRI integration tests - initializing node.");
+            log.info("CLIRI integration tests - initializing node.");
             TemporaryFolder dbFolder = new TemporaryFolder();
             dbFolder.create();
             TemporaryFolder logFolder = new TemporaryFolder();

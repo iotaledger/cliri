@@ -16,7 +16,6 @@ import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
 import com.iota.iri.utils.Pair;
 import com.iota.iri.zmq.MessageQ;
 
-import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.List;
 
@@ -26,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * 
- * The main class of IRI. This will propagate transactions into and throughout the network.
+ * The main class of CLIRI. This will propagate transactions into and throughout the network.
  * This data is stored as a {@link Tangle}, a form of a Directed acyclic graph.
  * All incoming data will be stored in one or more implementations of {@link PersistenceProvider}.
  * 
@@ -40,7 +39,7 @@ import org.slf4j.LoggerFactory;
  *     However, if the node has Neighbors, but no Internet connection, 
  *     synchronization will continue after Internet connection is established.
  *     Any transactions sent to this node in its local network will then be processed.
- *     This makes IRI able to run partially offline if an already existing database exists on this node.   
+ *     This makes CLIRI able to run partially offline if an already existing database exists on this node.
  * </p>
  * <p>
  *     Validation of a transaction is the process by which other devices choose the transaction.

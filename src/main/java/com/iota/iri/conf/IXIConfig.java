@@ -13,6 +13,6 @@ public interface IXIConfig extends Config {
     String getIxiDir();
 
     interface Descriptions {
-        String IXI_DIR = "The folder where ixi modules should be added for automatic discovery by IRI.";
+        String IXI_DIR = "The folder where ixi modules should be added for automatic discovery by CLIRI.";
     }
 }
