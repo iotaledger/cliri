@@ -18,7 +18,6 @@ public class TransactionRequester {
 
     private static final Logger log = LoggerFactory.getLogger(TransactionRequester.class);
     private final MessageQ messageQ;
-    private final Set<Hash> milestoneTransactionsToRequest = new LinkedHashSet<>();
     private final Set<Hash> transactionsToRequest = new LinkedHashSet<>();
 
     public static final int MAX_TX_REQ_QUEUE_SIZE = 10000;
@@ -44,33 +43,25 @@ public class TransactionRequester {
 
     public Hash[] getRequestedTransactions() {
         synchronized (syncObj) {
-            return ArrayUtils.addAll(transactionsToRequest.stream().toArray(Hash[]::new),
-                    milestoneTransactionsToRequest.stream().toArray(Hash[]::new));
+            return ArrayUtils.addAll(transactionsToRequest.toArray(new Hash[0]));
         }
     }
 
     public int numberOfTransactionsToRequest() {
-        return transactionsToRequest.size() + milestoneTransactionsToRequest.size();
+        return transactionsToRequest.size();
     }
 
     public boolean clearTransactionRequest(Hash hash) {
         synchronized (syncObj) {
-            boolean milestone = milestoneTransactionsToRequest.remove(hash);
-            boolean normal = transactionsToRequest.remove(hash);
-            return normal || milestone;
+            return transactionsToRequest.remove(hash);
         }
     }
 
-    public void requestTransaction(Hash hash, boolean milestone) throws Exception {
+    public void requestTransaction(Hash hash) throws Exception {
         if (!hash.equals(Hash.NULL_HASH) && !TransactionViewModel.exists(tangle, hash)) {
             synchronized (syncObj) {
-                if(milestone) {
-                    transactionsToRequest.remove(hash);
-                    milestoneTransactionsToRequest.add(hash);
-                } else {
-                    if(!milestoneTransactionsToRequest.contains(hash) && !transactionsToRequestIsFull()) {
+                if(!transactionsToRequestIsFull()) {
                         transactionsToRequest.add(hash);
-                    }
                 }
             }
         }
@@ -83,13 +74,10 @@ public class TransactionRequester {
      * while i.e. solidifying transactions or if a transaction arrived due to the gossip protocol.
      *
      * @param transactionHash hash of the transaction to check
-     * @param milestoneRequest flag that indicates if the hash was requested by a milestone request
      * @return true if the transaction is in the set of transactions to be requested and false otherwise
      */
-    public boolean isTransactionRequested(Hash transactionHash, boolean milestoneRequest) {
-        return (milestoneRequest && milestoneTransactionsToRequest.contains(transactionHash))
-                || (!milestoneRequest && milestoneTransactionsToRequest.contains(transactionHash) ||
-                transactionsToRequest.contains(transactionHash));
+    public boolean isTransactionRequested(Hash transactionHash) {
+        return transactionsToRequest.contains(transactionHash);
     }
 
     private boolean transactionsToRequestIsFull() {
@@ -97,19 +85,14 @@ public class TransactionRequester {
     }
 
 
-    public Hash transactionToRequest(boolean milestone) throws Exception {
-        // determine which set of transactions to operate on
-        Set<Hash> primarySet = milestone ? milestoneTransactionsToRequest : transactionsToRequest;
-        Set<Hash> alternativeSet = milestone ? transactionsToRequest : milestoneTransactionsToRequest;
-        Set<Hash> requestSet = primarySet.size() == 0 ? alternativeSet : primarySet;
-
+    public Hash transactionToRequest() throws Exception {
         // determine the first hash in our set that needs to be processed
         Hash hash = null;
         synchronized (syncObj) {
             // repeat while we have transactions that shall be requested
-            while (requestSet.size() != 0) {
+            while (transactionsToRequest.size() != 0) {
                 // remove the first item in our set for further examination
-                Iterator<Hash> iterator = requestSet.iterator();
+                Iterator<Hash> iterator = transactionsToRequest.iterator();
                 hash = iterator.next();
                 iterator.remove();
 
@@ -126,15 +109,15 @@ public class TransactionRequester {
                 // ... otherwise -> re-add it at the end of the set ...
                 //
                 // Note: we always have enough space since we removed the element before
-                requestSet.add(hash);
+                transactionsToRequest.add(hash);
 
                 // ... and abort our loop to continue processing with the element we found
                 break;
             }
         }
 
-        // randomly drop "non-milestone" transactions so we don't keep on asking for non-existent transactions forever
-        if(random.nextDouble() < P_REMOVE_REQUEST && !requestSet.equals(milestoneTransactionsToRequest)) {
+        // randomly drop transactions so we don't keep on asking for non-existent transactions forever
+        if(random.nextDouble() < P_REMOVE_REQUEST) {
             synchronized (syncObj) {
                 transactionsToRequest.remove(hash);
             }
