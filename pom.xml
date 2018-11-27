@@ -252,8 +252,7 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <finalName>iri-${project.version}</finalName>
-                            <outputDirectory>${project.basedir}/target</outputDirectory>
+                            <outputDirectory>${project.basedir}/target/original/</outputDirectory>
                             <mainClass>com.iota.iri.CLIRI</mainClass>
                             <transformers>
                                 <transformer
