@@ -4,10 +4,8 @@ import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.service.tipselection.ReferenceChecker;
 import com.iota.iri.storage.Tangle;
 import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
 import java.util.ArrayList;
@@ -19,6 +17,9 @@ public class ReferenceCheckerImplTest {
     private static final TemporaryFolder dbFolder = new TemporaryFolder();
     private static final TemporaryFolder logFolder = new TemporaryFolder();
     private static Tangle tangle;
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
 
     @AfterClass
     public static void tearDown() throws Exception {
@@ -105,5 +106,41 @@ public class ReferenceCheckerImplTest {
 
         Assert.assertFalse(referenceChecker.doesReference(transactions.get(0).getHash(), transactions.get(2).getHash()));
         Assert.assertFalse(referenceChecker.doesReference(transactions.get(1).getHash(), transactions.get(2).getHash()));
+    }
+
+    @Test
+    public void testGetConfidencesThrowsExceptionWhenReferenceTransactionDoesNotExist() throws Exception {
+        List<TransactionViewModel> transactions = new ArrayList<>();
+        List<TransactionViewModel> nonExistentTransactions = new ArrayList<>();
+
+        transactions.add(new TransactionViewModel(getRandomTransactionTrits(), getRandomTransactionHash()));
+        transactions.add(new TransactionViewModel(getRandomTransactionTrits(), getRandomTransactionHash()));
+        nonExistentTransactions.add(new TransactionViewModel(getRandomTransactionTrits(), getRandomTransactionHash()));
+        nonExistentTransactions.add(new TransactionViewModel(getRandomTransactionTrits(), getRandomTransactionHash()));
+
+        for (TransactionViewModel transaction : transactions) {
+            transaction.store(tangle);
+        }
+
+        exception.expect(Exception.class);
+        new ReferenceCheckerImpl(tangle).doesReference(nonExistentTransactions.get(0).getHash(), transactions.get(0).getHash());
+    }
+
+    @Test
+    public void testGetConfidencesThrowsExceptionWhenTargetTransactionDoesNotExist() throws Exception {
+        List<TransactionViewModel> transactions = new ArrayList<>();
+        List<TransactionViewModel> nonExistentTransactions = new ArrayList<>();
+
+        transactions.add(new TransactionViewModel(getRandomTransactionTrits(), getRandomTransactionHash()));
+        transactions.add(new TransactionViewModel(getRandomTransactionTrits(), getRandomTransactionHash()));
+        nonExistentTransactions.add(new TransactionViewModel(getRandomTransactionTrits(), getRandomTransactionHash()));
+        nonExistentTransactions.add(new TransactionViewModel(getRandomTransactionTrits(), getRandomTransactionHash()));
+
+        for (TransactionViewModel transaction : transactions) {
+            transaction.store(tangle);
+        }
+
+        exception.expect(Exception.class);
+        new ReferenceCheckerImpl(tangle).doesReference(transactions.get(0).getHash(), nonExistentTransactions.get(0).getHash());
     }
 }

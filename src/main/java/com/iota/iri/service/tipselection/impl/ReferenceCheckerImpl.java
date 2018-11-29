@@ -17,6 +17,11 @@ public class ReferenceCheckerImpl implements ReferenceChecker {
 
     @Override
     public boolean doesReference(Hash referencer, Hash target) throws Exception {
+        if (!TransactionViewModel.exists(tangle, referencer) ||
+            !TransactionViewModel.exists(tangle, target)) {
+                throw new Exception("Transactions not found");
+        }
+
         LinkedHashSet<Hash> visitedHashes = new LinkedHashSet<>();
         Queue<Hash> queue = new LinkedList<Hash>();
 
