@@ -415,6 +415,13 @@ public class API {
                 case "getTips": {
                     return getTipsStatement();
                 }
+                case "getConfidences": {
+                    final List<Hash> transactions = getParameterAsList(request, "transactions", HASH_SIZE).stream()
+                        .map(HashFactory.TRANSACTION::create)
+                        .collect(Collectors.toList());
+
+                    return getConfidencesStatement(transactions);
+                }
                 case "getTransactionsToApprove": {
                     Optional<Hash> reference = request.containsKey("reference") ?
                         Optional.of(HashFactory.TRANSACTION.create(getParameterAsStringAndValidate(request,"reference", HASH_SIZE)))
@@ -658,6 +665,32 @@ public class API {
     }
 
     /**
+     * <p>
+     *     Get the confirmation confidences for a set of transactions.
+     *     This is for determining if a transaction was accepted and confirmed by the network or not.
+     * </p>
+     * <p>
+     *     This API call returns a list of floating point values in the [0,1] interval, 
+     *     in the same order as the submitted transactions.<br/>
+     *     The higher the confidence for a given transaction, the more likely it is to be accepted.
+     * </p>
+     * Returns an {@link com.iota.iri.service.dto.ErrorResponse} if a tip is missing or the subtangle is not solid
+     *
+     * @param transactions List of transactions you want to get the confirmation confidences for.
+     * @return {@link com.iota.iri.service.dto.GetInclusionStatesResponse}
+     * @throws Exception When a transaction cannot be loaded from hash
+     **/
+    private AbstractResponse getConfidencesStatement(final List<Hash> transactions) throws Exception {
+        try {
+            List<Double> confidences = instance.tipsSelector.getConfidences(transactions);
+            return GetConfidencesResponse.create(confidences);
+        } catch (Exception e) {
+            log.info("Confidence calculation failed: " + e.getLocalizedMessage());
+            return ErrorResponse.create(e.getLocalizedMessage());
+        }
+    }
+
+    /**
       * Tip selection which returns <tt>trunkTransaction</tt> and <tt>branchTransaction</tt>.
       * The <tt>reference</tt> is an optional hash of a transaction you want to approve.
       *
@@ -841,7 +874,7 @@ public class API {
             final Set<String> bundles = getParameterAsSet(request,"bundles",HASH_SIZE);
             for (final String bundle : bundles) {
                 bundlesTransactions.addAll(
-                        BundleViewModel.load(instance.tangle, HashFactory.BUNDLE.create(bundle))
+                    BundleViewModel.load(instance.tangle, HashFactory.BUNDLE.create(bundle))
                         .getHashes());
             }
             foundTransactions.addAll(bundlesTransactions);

@@ -25,4 +25,6 @@ public interface TipSelector {
      * @throws Exception If DB fails to retrieve transactions
      */
     List<Hash> getTransactionsToApprove(Optional<Hash> reference) throws Exception;
+
+    List<Double> getConfidences(List<Hash> transactions) throws Exception;
 }
