@@ -109,25 +109,25 @@ public class ReferenceCheckerImplTest {
     }
 
     @Test
-    public void testGetConfidencesThrowsExceptionWhenReferenceTransactionDoesNotExist() throws Exception {
+    public void testReferenceCheckerThrowsExceptionWhenReferenceTransactionDoesNotExist() throws Exception {
         List<TransactionViewModel> transactions = new ArrayList<>();
         List<TransactionViewModel> nonExistentTransactions = new ArrayList<>();
 
         transactions.add(new TransactionViewModel(getRandomTransactionTrits(), getRandomTransactionHash()));
         transactions.add(new TransactionViewModel(getRandomTransactionTrits(), getRandomTransactionHash()));
-        nonExistentTransactions.add(new TransactionViewModel(getRandomTransactionTrits(), getRandomTransactionHash()));
-        nonExistentTransactions.add(new TransactionViewModel(getRandomTransactionTrits(), getRandomTransactionHash()));
 
         for (TransactionViewModel transaction : transactions) {
             transaction.store(tangle);
         }
+
+        nonExistentTransactions.add(new TransactionViewModel(getRandomTransactionTrits(), getRandomTransactionHash()));
 
         exception.expect(Exception.class);
         new ReferenceCheckerImpl(tangle).doesReference(nonExistentTransactions.get(0).getHash(), transactions.get(0).getHash());
     }
 
     @Test
-    public void testGetConfidencesThrowsExceptionWhenTargetTransactionDoesNotExist() throws Exception {
+    public void testReferenceCheckerThrowsExceptionWhenTargetTransactionDoesNotExist() throws Exception {
         List<TransactionViewModel> transactions = new ArrayList<>();
         List<TransactionViewModel> nonExistentTransactions = new ArrayList<>();
 
@@ -142,5 +142,30 @@ public class ReferenceCheckerImplTest {
 
         exception.expect(Exception.class);
         new ReferenceCheckerImpl(tangle).doesReference(transactions.get(0).getHash(), nonExistentTransactions.get(0).getHash());
+    }
+
+    @Test
+    public void testReferenceCheckerTrueForChainOfApprovers() throws Exception {
+        List<TransactionViewModel> transactions = new ArrayList<>();
+
+        transactions.add(new TransactionViewModel(getRandomTransactionTrits(), getRandomTransactionHash()));
+
+        for (int i = 0; i < 10; i++) {
+            TransactionViewModel lastTx = transactions.get(transactions.size() - 1);
+            transactions.add(new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(
+                    lastTx.getHash(),
+                    lastTx.getHash()),
+                    getRandomTransactionHash()));
+        }
+
+        for (TransactionViewModel transaction : transactions) {
+            transaction.store(tangle);
+        }
+
+        ReferenceChecker referenceChecker = new ReferenceCheckerImpl(tangle);
+        TransactionViewModel lastTx = transactions.get(transactions.size() - 1);
+        TransactionViewModel firstTx = transactions.get(0);
+
+        Assert.assertTrue(referenceChecker.doesReference(lastTx.getHash(), firstTx.getHash()));
     }
 }

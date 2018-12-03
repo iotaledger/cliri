@@ -19,7 +19,7 @@ public class GetConfidencesResponse extends AbstractResponse {
 	/**
      * Creates a new {@link GetConfidencesResponse}
      * 
-     * @param confidences {@link #states}
+     * @param confidences {@link #confidences}
      * @return an {@link GetConfidencesResponse} filled with the error message
      */
 	public static AbstractResponse create(List<Double> confidences) {
@@ -30,7 +30,7 @@ public class GetConfidencesResponse extends AbstractResponse {
 	
     /**
      * 
-     * @return {@link #states}
+     * @return {@link #confidences}
      */
 	public Double [] getConfidences() {
 		return confidences;

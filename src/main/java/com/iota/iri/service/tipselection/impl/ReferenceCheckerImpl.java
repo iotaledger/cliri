@@ -1,12 +1,20 @@
 package com.iota.iri.service.tipselection.impl;
 
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Queue;
+import java.util.function.Predicate;
+
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.Hash;
 import com.iota.iri.service.tipselection.ReferenceChecker;
 import com.iota.iri.storage.Tangle;
-import org.apache.commons.collections4.CollectionUtils;
 
-import java.util.*;
+import com.iota.iri.utils.dag.DAGHelper;
+import org.apache.commons.collections4.CollectionUtils;
 
 public class ReferenceCheckerImpl implements ReferenceChecker {
     private Tangle tangle;
@@ -19,7 +27,7 @@ public class ReferenceCheckerImpl implements ReferenceChecker {
     public boolean doesReference(Hash referencer, Hash target) throws Exception {
         if (!TransactionViewModel.exists(tangle, referencer) ||
             !TransactionViewModel.exists(tangle, target)) {
-                throw new Exception("Transactions not found");
+                throw new IllegalStateException("Transactions not found");
         }
 
         LinkedHashSet<Hash> visitedHashes = new LinkedHashSet<>();

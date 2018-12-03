@@ -674,7 +674,7 @@ public class API {
      *     in the same order as the submitted transactions.<br/>
      *     The higher the confidence for a given transaction, the more likely it is to be accepted.
      * </p>
-     * Returns an {@link com.iota.iri.service.dto.ErrorResponse} if a tip is missing or the subtangle is not solid
+     * Returns an {@link com.iota.iri.service.dto.ErrorResponse} if a transaction is missing
      *
      * @param transactions List of transactions you want to get the confirmation confidences for.
      * @return {@link com.iota.iri.service.dto.GetInclusionStatesResponse}
@@ -874,7 +874,7 @@ public class API {
             final Set<String> bundles = getParameterAsSet(request,"bundles",HASH_SIZE);
             for (final String bundle : bundles) {
                 bundlesTransactions.addAll(
-                    BundleViewModel.load(instance.tangle, HashFactory.BUNDLE.create(bundle))
+                        BundleViewModel.load(instance.tangle, HashFactory.BUNDLE.create(bundle))
                         .getHashes());
             }
             foundTransactions.addAll(bundlesTransactions);
