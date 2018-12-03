@@ -44,6 +44,12 @@ public class CumulativeWeightCalculator implements RatingCalculator{
         return calculateCwInOrder(txHashesToRate);
     }
 
+    @Override
+    public Integer calculateSingle(Hash transaction) throws Exception {
+        LinkedHashSet<Hash> futureSet = sortTransactionsInTopologicalOrder(transaction);
+        return futureSet.size();
+    }
+
     //Uses DFS algorithm to sort
     private LinkedHashSet<Hash> sortTransactionsInTopologicalOrder(Hash startTx) throws Exception {
         LinkedHashSet<Hash> sortedTxs = new LinkedHashSet<>();

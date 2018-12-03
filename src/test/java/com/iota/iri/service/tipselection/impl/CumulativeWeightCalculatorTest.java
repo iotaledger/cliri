@@ -315,6 +315,50 @@ public class CumulativeWeightCalculatorTest {
         Assert.assertEquals(1, 1);
     }
 
+    @Test
+    public void testCalculateSingleInDiamondFormation() throws Exception {
+        TransactionViewModel transaction, transaction1, transaction2, transaction3;
+        transaction = new TransactionViewModel(getRandomTransactionTrits(), getRandomTransactionHash());
+        transaction1 = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(transaction.getHash(),
+                transaction.getHash()), getRandomTransactionHash());
+        Hash transactionHash2 = getHashWithSimilarPrefix(transaction1);
+        transaction2 = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(transaction.getHash(),
+                transaction.getHash()), transactionHash2);
+        transaction3 = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(transaction1.getHash(),
+                transaction2.getHash()), getRandomTransactionHash());
+        transaction.store(tangle);
+        transaction1.store(tangle);
+        transaction2.store(tangle);
+        transaction3.store(tangle);
+
+        Assert.assertEquals(new Integer(4), cumulativeWeightCalculator.calculateSingle(transaction.getHash()));
+        Assert.assertEquals(new Integer(2), cumulativeWeightCalculator.calculateSingle(transaction1.getHash()));
+        Assert.assertEquals(new Integer(2), cumulativeWeightCalculator.calculateSingle(transaction2.getHash()));
+        Assert.assertEquals(new Integer(1), cumulativeWeightCalculator.calculateSingle(transaction3.getHash()));
+    }
+
+    @Test
+    public void testCalculateSingleInChainFormation() throws Exception {
+        TransactionViewModel transaction, transaction1, transaction2, transaction3;
+        transaction = new TransactionViewModel(getRandomTransactionTrits(), getRandomTransactionHash());
+        transaction1 = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(transaction.getHash(),
+                transaction.getHash()), getRandomTransactionHash());
+        Hash transactionHash2 = getHashWithSimilarPrefix(transaction1);
+        transaction2 = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(transaction1.getHash(),
+                transaction1.getHash()), transactionHash2);
+        transaction3 = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(transaction2.getHash(),
+                transaction2.getHash()), getRandomTransactionHash());
+        transaction.store(tangle);
+        transaction1.store(tangle);
+        transaction2.store(tangle);
+        transaction3.store(tangle);
+
+        Assert.assertEquals(new Integer(4), cumulativeWeightCalculator.calculateSingle(transaction.getHash()));
+        Assert.assertEquals(new Integer(3), cumulativeWeightCalculator.calculateSingle(transaction1.getHash()));
+        Assert.assertEquals(new Integer(2), cumulativeWeightCalculator.calculateSingle(transaction2.getHash()));
+        Assert.assertEquals(new Integer(1), cumulativeWeightCalculator.calculateSingle(transaction3.getHash()));
+    }
+
     private long ratingTime(int size) throws Exception {
         Hash[] hashes = new Hash[size];
         hashes[0] = getRandomTransactionHash();

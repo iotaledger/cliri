@@ -44,10 +44,13 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
 
     @Test
     public void returnsGenesisInSingleTxTangle() throws Exception {
-        TransactionViewModel transaction;
-        transaction = new TransactionViewModel(getRandomTransactionTrits(), getRandomTransactionHash());
+        TransactionViewModel transaction = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(
+                Hash.NULL_HASH,
+                Hash.NULL_HASH),
+                getRandomTransactionHash());
         transaction.store(tangle);
-        int threshold = 50;
+
+        final int threshold = 50;
         Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(transaction.getBundleHash());
         
         EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold);

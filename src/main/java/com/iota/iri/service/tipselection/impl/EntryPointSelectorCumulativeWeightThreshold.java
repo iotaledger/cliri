@@ -41,10 +41,10 @@ public class EntryPointSelectorCumulativeWeightThreshold implements EntryPointSe
         Hash currentHash = tip;
         Integer currentWeight = 0;
 
-        // Stop when reaching the genesis or the cumulative weight threshold
+        // Backtrack as long as the genesis hasn't been reached and the tresholed has not been crossed
         while (currentWeight < threshold && !Objects.equals(currentHash, Hash.NULL_HASH)) {
             currentHash = TransactionViewModel.fromHash(tangle, currentHash).getTrunkTransactionHash();
-            currentWeight = cumulativeWeightCalculator.calculate(currentHash).get(currentHash);
+            currentWeight = cumulativeWeightCalculator.calculateSingle(currentHash);
         }
 
         return currentHash;
