@@ -6,23 +6,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class LedgerValidator {
+public interface LedgerValidator {
 
-    public LedgerValidator() {
-    }
+    boolean checkConsistency(List<Hash> hashes) throws Exception;
 
-    /**
-     * Initializes the LedgerValidator.
-     * @throws Exception
-     */
-    protected void init() throws Exception {
-    }
+    boolean updateDiff(Set<Hash> approvedHashes, final Map<Hash, Long> diff, Hash tip) throws Exception;
 
-    public boolean checkConsistency(List<Hash> hashes) throws Exception {
-        return true;
-    }
-
-    public boolean updateDiff(Set<Hash> approvedHashes, final Map<Hash, Long> diff, Hash tip) throws Exception {
-        return true;
-    }
 }

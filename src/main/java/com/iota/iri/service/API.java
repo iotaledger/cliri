@@ -423,6 +423,13 @@ public class API {
                 case "getTips": {
                     return getTipsStatement();
                 }
+                case "getConfidences": {
+                    final List<Hash> transactions = getParameterAsList(request, "transactions", HASH_SIZE).stream()
+                        .map(HashFactory.TRANSACTION::create)
+                        .collect(Collectors.toList());
+
+                    return getConfidencesStatement(transactions);
+                }
                 case "getTransactionsToApprove": {
                     Optional<Hash> reference = request.containsKey("reference") ?
                         Optional.of(HashFactory.TRANSACTION.create(getParameterAsStringAndValidate(request,"reference", HASH_SIZE)))
@@ -663,6 +670,32 @@ public class API {
      */
     private static void incEllapsedTimeGetTxToApprove(long ellapsedTime) {
         ellapsedTime_getTxToApprove += ellapsedTime;
+    }
+
+    /**
+     * <p>
+     *     Get the confirmation confidences for a set of transactions.
+     *     This is for determining if a transaction was accepted and confirmed by the network or not.
+     * </p>
+     * <p>
+     *     This API call returns a list of floating point values in the [0,1] interval, 
+     *     in the same order as the submitted transactions.<br/>
+     *     The higher the confidence for a given transaction, the more likely it is to be accepted.
+     * </p>
+     * Returns an {@link com.iota.iri.service.dto.ErrorResponse} if a transaction is missing
+     *
+     * @param transactions List of transactions you want to get the confirmation confidences for.
+     * @return {@link com.iota.iri.service.dto.GetInclusionStatesResponse}
+     * @throws Exception When a transaction cannot be loaded from hash
+     **/
+    private AbstractResponse getConfidencesStatement(final List<Hash> transactions) throws Exception {
+        try {
+            List<Double> confidences = instance.tipsSelector.getConfidences(transactions);
+            return GetConfidencesResponse.create(confidences);
+        } catch (Exception e) {
+            log.info("Confidence calculation failed: " + e.getLocalizedMessage());
+            return ErrorResponse.create(e.getLocalizedMessage());
+        }
     }
 
     /**

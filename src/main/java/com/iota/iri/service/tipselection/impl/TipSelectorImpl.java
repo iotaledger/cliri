@@ -8,6 +8,7 @@ import com.iota.iri.storage.Tangle;
 import com.iota.iri.utils.collections.interfaces.UnIterableMap;
 
 import java.security.InvalidAlgorithmParameterException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -21,6 +22,7 @@ public class TipSelectorImpl implements TipSelector {
 
     public static final String REFERENCE_TRANSACTION_TOO_OLD = "reference transaction is too old";
     public static final String TIPS_NOT_CONSISTENT = "inconsistent tips pair selected";
+    public static final int NUMBER_OF_TIPS_IN_GET_CONFIDENCES = 20;
 
     private final EntryPointSelector entryPointSelector;
     private final RatingCalculator ratingCalculator;
@@ -28,12 +30,14 @@ public class TipSelectorImpl implements TipSelector {
 
     private final LedgerValidator ledgerValidator;
     private final Tangle tangle;
+    private final ReferenceChecker referenceChecker;
 
     public TipSelectorImpl(Tangle tangle,
                            LedgerValidator ledgerValidator,
                            EntryPointSelector entryPointSelector,
                            RatingCalculator ratingCalculator,
-                           Walker walkerAlpha) {
+                           Walker walkerAlpha,
+                           ReferenceChecker referenceChecker) {
 
         this.entryPointSelector = entryPointSelector;
         this.ratingCalculator = ratingCalculator;
@@ -43,6 +47,7 @@ public class TipSelectorImpl implements TipSelector {
         //used by walkValidator
         this.ledgerValidator = ledgerValidator;
         this.tangle = tangle;
+        this.referenceChecker = referenceChecker;
     }
 
     /**
@@ -95,5 +100,33 @@ public class TipSelectorImpl implements TipSelector {
         if (!rating.containsKey(reference)) {
             throw new InvalidAlgorithmParameterException(REFERENCE_TRANSACTION_TOO_OLD);
         }
+    }
+
+    @Override
+    public List<Double> getConfidences(List<Hash> transactions) throws Exception {
+        Hash entryPoint = entryPointSelector.getEntryPoint();
+        UnIterableMap<HashId, Integer> rating = ratingCalculator.calculate(entryPoint);
+
+        List<Hash> tips = new ArrayList<>();
+        for (int i = 0; i < NUMBER_OF_TIPS_IN_GET_CONFIDENCES; i++) {
+            WalkValidator walkValidator = new WalkValidatorImpl(tangle, ledgerValidator);
+            Hash tip = walker.walk(entryPoint, rating, walkValidator);
+            tips.add(tip);
+        }
+
+        List<Double> res = new ArrayList<>();
+        for (Hash transaction : transactions) {
+            int counter = 0;
+
+            for (Hash tip : tips) {
+                if (referenceChecker.doesReference(tip, transaction)) {
+                    counter++;
+                }
+            }
+
+            res.add(((double) counter) / NUMBER_OF_TIPS_IN_GET_CONFIDENCES);
+        }
+
+        return res;
     }
 }

@@ -88,3 +88,6 @@ $RECYCLE.BIN/
 
 
 # End of https://www.gitignore.io/api/osx,linux,windows
+
+testnetdb*
+.vscode
