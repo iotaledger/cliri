@@ -58,6 +58,7 @@ import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.impl.BasicAuthenticationMechanism;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.RequestLimitingHandler;
 import io.undertow.util.*;
 
 import static io.undertow.Handlers.path;
@@ -174,20 +175,27 @@ public class API {
 
         log.debug("Binding JSON-REST API Undertow server on {}:{}", apiHost, apiPort);
 
-        server = Undertow.builder().addHttpListener(apiPort, apiHost)
-                .setHandler(path().addPrefixPath("/", addSecurity(new HttpHandler() {
+        //amount of concurrent requests, equests beyond the limit will block until the previous request is complete.
+        //http://undertow.io/undertow-docs/undertow-docs-1.2.0/listeners.html
+        int numberOfWorkerThreads = Runtime.getRuntime().availableProcessors() * 10;
+        
+        server = Undertow.builder().addHttpListener(apiPort, apiHost).setHandler(path().addPrefixPath("/",
+                addSecurity(new RequestLimitingHandler(numberOfWorkerThreads, new HttpHandler() {
+
                     @Override
                     public void handleRequest(final HttpServerExchange exchange) throws Exception {
                         HttpString requestMethod = exchange.getRequestMethod();
                         if (Methods.OPTIONS.equals(requestMethod)) {
                             String allowedMethods = "GET,HEAD,POST,PUT,DELETE,TRACE,OPTIONS,CONNECT,PATCH";
-                            //return list of allowed methods in response headers
+                            // return list of allowed methods in response headers
                             exchange.setStatusCode(StatusCodes.OK);
-                            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, MimeMappings.DEFAULT_MIME_MAPPINGS.get("txt"));
+                            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE,
+                                    MimeMappings.DEFAULT_MIME_MAPPINGS.get("txt"));
                             exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, 0);
                             exchange.getResponseHeaders().put(Headers.ALLOW, allowedMethods);
                             exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Origin"), "*");
-                            exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Headers"), "Origin, X-Requested-With, Content-Type, Accept, X-IOTA-API-Version");
+                            exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Headers"),
+                                    "Origin, X-Requested-With, Content-Type, Accept, X-IOTA-API-Version");
                             exchange.getResponseSender().close();
                             return;
                         }
@@ -198,7 +206,7 @@ public class API {
                         }
                         processRequest(exchange);
                     }
-                }))).build();
+                })))).build();
         server.start();
     }
 
@@ -665,7 +673,7 @@ public class API {
       * @return {@link com.iota.iri.service.dto.GetTransactionsToApproveResponse}
       * @throws Exception When tip selection has failed. Currently caught and returned as an {@link ErrorResponse}.
       **/
-    private synchronized AbstractResponse getTransactionsToApproveStatement(Optional<Hash> reference) throws Exception {
+    private AbstractResponse getTransactionsToApproveStatement(Optional<Hash> reference) throws Exception {
         try {
             List<Hash> tips = getTransactionToApproveTips(reference);
             return GetTransactionsToApproveResponse.create(tips.get(0), tips.get(1));
