@@ -1,19 +1,17 @@
 package com.iota.iri.service.tipselection.impl;
 
 import java.util.Arrays;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
-import java.util.function.Predicate;
 
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.Hash;
 import com.iota.iri.service.tipselection.ReferenceChecker;
 import com.iota.iri.storage.Tangle;
 
-import com.iota.iri.utils.dag.DAGHelper;
 import org.apache.commons.collections4.CollectionUtils;
 
 public class ReferenceCheckerImpl implements ReferenceChecker {
@@ -30,8 +28,8 @@ public class ReferenceCheckerImpl implements ReferenceChecker {
                 throw new IllegalStateException("Transactions not found");
         }
 
-        LinkedHashSet<Hash> visitedHashes = new LinkedHashSet<>();
-        Queue<Hash> queue = new LinkedList<Hash>();
+        HashSet<Hash> visitedHashes = new HashSet<>();
+        Queue<Hash> queue = new LinkedList<>();
 
         // Run BFS scan to look for approvee
         queue.add(referencer);

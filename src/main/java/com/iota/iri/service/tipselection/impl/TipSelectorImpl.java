@@ -22,7 +22,7 @@ public class TipSelectorImpl implements TipSelector {
 
     public static final String REFERENCE_TRANSACTION_TOO_OLD = "reference transaction is too old";
     public static final String TIPS_NOT_CONSISTENT = "inconsistent tips pair selected";
-    public static final int numberOfTipsInGetConfidences = 20;
+    public static final int NUMBER_OF_TIPS_IN_GET_CONFIDENCES = 20;
 
     private final EntryPointSelector entryPointSelector;
     private final RatingCalculator ratingCalculator;
@@ -107,14 +107,14 @@ public class TipSelectorImpl implements TipSelector {
         Hash entryPoint = entryPointSelector.getEntryPoint();
         UnIterableMap<HashId, Integer> rating = ratingCalculator.calculate(entryPoint);
 
-        List<Hash> tips = new ArrayList<Hash>();
-        for (int i = 0; i < numberOfTipsInGetConfidences; i++) {
+        List<Hash> tips = new ArrayList<>();
+        for (int i = 0; i < NUMBER_OF_TIPS_IN_GET_CONFIDENCES; i++) {
             WalkValidator walkValidator = new WalkValidatorImpl(tangle, ledgerValidator);
             Hash tip = walker.walk(entryPoint, rating, walkValidator);
             tips.add(tip);
         }
 
-        List<Double> res = new ArrayList<Double>();
+        List<Double> res = new ArrayList<>();
         for (Hash transaction : transactions) {
             int counter = 0;
 
@@ -124,7 +124,7 @@ public class TipSelectorImpl implements TipSelector {
                 }
             }
 
-            res.add(new Double(((double) counter) / numberOfTipsInGetConfidences));
+            res.add(((double) counter) / NUMBER_OF_TIPS_IN_GET_CONFIDENCES);
         }
 
         return res;

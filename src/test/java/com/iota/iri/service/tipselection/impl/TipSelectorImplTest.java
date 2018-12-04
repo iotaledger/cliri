@@ -67,7 +67,7 @@ public class TipSelectorImplTest {
     public void testGetConfidencesReturnsEmptyListWhenGettingEmptyList() throws Exception {
         TipSelectorImpl tipSelector = new TipSelectorImpl(tangle, ledgerValidator, entryPointSelector, ratingCalculator, walker, referenceChecker);
 
-        List<Hash> inputs = new ArrayList<Hash>();
+        List<Hash> inputs = new ArrayList<>();
 
         List<Double> result = tipSelector.getConfidences(inputs);
 
