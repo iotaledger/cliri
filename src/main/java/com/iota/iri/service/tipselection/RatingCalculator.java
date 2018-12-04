@@ -7,7 +7,6 @@ import com.iota.iri.utils.collections.interfaces.UnIterableMap;
 /**
  * Calculates the rating for a sub graph
  */
-@FunctionalInterface
 public interface RatingCalculator {
 
     /**
@@ -23,4 +22,13 @@ public interface RatingCalculator {
      */
 
     UnIterableMap<HashId, Integer> calculate(Hash entryPoint) throws Exception;
+
+    /**
+     * Calculates rating for a single transactions
+     *
+     * @param transaction Transaction hash of transaction in question
+     * @return  Map
+     * @throws Exception If DB fails to retrieve transaction
+     */
+    Integer calculateSingle(Hash transaction) throws Exception;
 }

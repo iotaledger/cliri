@@ -45,5 +45,9 @@ public class RatingOne implements RatingCalculator {
         return rating;
     }
 
+    @Override
+    public Integer calculateSingle(Hash transaction) throws Exception {
+        return 1;
+    }
 
 }
