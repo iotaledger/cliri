@@ -61,12 +61,15 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
 
     @Test
     public void returnsCorrectTxInChain() throws Exception {
-        int threshold = 5;
+        final int THRESHOLD = 5;
+        final int CHAIN_LENGTH = 30;
+        final int EXPECTED_ENTRYPOINT = CHAIN_LENGTH - 7;
+        
         List<TransactionViewModel> transactions = new ArrayList<TransactionViewModel>();
 
         transactions.add(new TransactionViewModel(getRandomTransactionTrits(), getRandomTransactionHash()));
 
-        for (int i=0; i<10; i++) {
+        for (int i = 0; i < CHAIN_LENGTH; i++) {
             Hash prevTxHash = transactions.get(transactions.size() - 1).getHash();
             transactions.add(new TransactionViewModel(
                 getRandomTransactionWithTrunkAndBranch(prevTxHash, prevTxHash), getRandomTransactionHash()));
@@ -78,10 +81,46 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
 
         Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(transactions.get(transactions.size() - 1).getHash());
         
-        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold);
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, THRESHOLD);
         Hash entryPoint = entryPointSelector.getEntryPoint();
 
         Assert.assertNotEquals(Hash.NULL_HASH, entryPoint);
-        Assert.assertEquals(transactions.get(transactions.size() - threshold).getHash(), entryPoint);
+        Assert.assertEquals(transactions.get(EXPECTED_ENTRYPOINT).getHash(), entryPoint);
+    }
+
+    @Test
+    public void returnsCorrectTxInWheatStockShape() throws Exception {
+        final int THRESHOLD = 15;
+        final int STALK_LEVELS = 15;
+        final int TX_PER_LEVEL = 5;
+        final int EXPECTED_STALK_LEVEL = STALK_LEVELS - 4;
+        
+        List<TransactionViewModel> mainStalk = new ArrayList<TransactionViewModel>();
+
+        mainStalk.add(new TransactionViewModel(getRandomTransactionTrits(), getRandomTransactionHash()));
+        mainStalk.get(0).store(tangle);
+
+        for (int i = 0; i < STALK_LEVELS - 1; i++) {
+            Hash prevTxHash = mainStalk.get(mainStalk.size() - 1).getHash();
+            TransactionViewModel mainStalkTx = new TransactionViewModel(
+                getRandomTransactionWithTrunkAndBranch(prevTxHash, prevTxHash), getRandomTransactionHash());
+
+            mainStalk.add(mainStalkTx);
+            mainStalkTx.store(tangle);
+            
+            for (int j = 0; j < TX_PER_LEVEL; j++) {
+                new TransactionViewModel(
+                    getRandomTransactionWithTrunkAndBranch(mainStalkTx.getHash(), mainStalkTx.getHash()), getRandomTransactionHash())
+                    .store(tangle);
+            }
+        }
+
+        Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(mainStalk.get(mainStalk.size() - 1).getHash());
+        
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, THRESHOLD);
+        Hash entryPoint = entryPointSelector.getEntryPoint();
+
+        Assert.assertNotEquals(Hash.NULL_HASH, entryPoint);
+        Assert.assertEquals(mainStalk.get(EXPECTED_STALK_LEVEL).getHash(), entryPoint);
     }
 }
