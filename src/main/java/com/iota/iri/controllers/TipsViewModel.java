@@ -61,7 +61,7 @@ public class TipsViewModel {
         synchronized (sync) {
             int size = solidTips.size();
             if (size == 0) {
-                return getRandomNonSolidTipHash();
+                throw new RuntimeException("Failed to get random tip, most likely a bootstrapping issue.");
             }
             int index = seed.nextInt(size);
             Iterator<Hash> hashIterator;
