@@ -10,6 +10,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -18,6 +20,9 @@ import static com.iota.iri.controllers.TransactionViewModelTest.getRandomTransac
 import static com.iota.iri.controllers.TransactionViewModelTest.getRandomTransactionWithTrunkAndBranch;
 
 public class TimeWindowedApproveeCounterTest {
+
+    private static final Duration MIN_DURATION = Duration.ZERO;
+    private static final Duration MAX_DURATION = Duration.ofSeconds(Long.MAX_VALUE);
 
     private static final TemporaryFolder dbFolder = new TemporaryFolder();
     private static final TemporaryFolder logFolder = new TemporaryFolder();
@@ -41,9 +46,9 @@ public class TimeWindowedApproveeCounterTest {
 
     @Test
     public void testEmptyTangle() throws Exception {
-        TimeWindowedApproveeCounter counter = new TimeWindowedApproveeCounter(tangle, 0, Long.MAX_VALUE);
+        TimeWindowedApproveeCounter counter = new TimeWindowedApproveeCounter(tangle, MIN_DURATION, MAX_DURATION);
 
-        final long count = counter.getCount(0, Hash.NULL_HASH, new HashSet<>());
+        final long count = counter.getCount(Instant.EPOCH, Hash.NULL_HASH, new HashSet<>());
         Assert.assertEquals(0, count);
     }
 
@@ -65,17 +70,17 @@ public class TimeWindowedApproveeCounterTest {
 
     @Test
     public void testSingleApproveeNotInTimeWindow() throws Exception {
-        final int minTransactionAge = 2;
-        final int maxTransactionAge = 5;
+        final Duration minTransactionAge = Duration.ofSeconds(2);
+        final Duration maxTransactionAge = Duration.ofSeconds(5);
 
         TimeWindowedApproveeCounter counter = new TimeWindowedApproveeCounter(tangle, minTransactionAge,
                 maxTransactionAge);
 
         List<TransactionViewModel> transactions = getTransactionChain(2);
 
-        final long now = 10;
+        final Instant now = Instant.ofEpochSecond(10);
         transactions.get(0).setArrivalTime(0);
-        transactions.get(1).setArrivalTime(now);
+        transactions.get(1).setArrivalTime(now.getEpochSecond());
 
         for (TransactionViewModel transaction : transactions) {
             transaction.store(tangle);
@@ -87,8 +92,8 @@ public class TimeWindowedApproveeCounterTest {
 
     @Test
     public void testTimeWindowTransactionsInChain() throws Exception {
-        final int minTransactionAge = 2;
-        final int maxTransactionAge = 5;
+        final Duration minTransactionAge = Duration.ofSeconds(2);
+        final Duration maxTransactionAge = Duration.ofSeconds(5);
 
         TimeWindowedApproveeCounter counter = new TimeWindowedApproveeCounter(tangle, minTransactionAge,
                 maxTransactionAge);
@@ -102,13 +107,14 @@ public class TimeWindowedApproveeCounterTest {
             transaction.store(tangle);
         }
 
-        final long count = counter.getCount(10, transactions.get(transactions.size() - 1).getHash(), new HashSet<>());
-        Assert.assertEquals(maxTransactionAge - minTransactionAge + 1, count);
+        final long count = counter.getCount(Instant.ofEpochSecond(10),
+                transactions.get(transactions.size() - 1).getHash(), new HashSet<>());
+        Assert.assertEquals(4, count);
     }
 
     @Test
     public void testDoNotCountProcessedTransactions() throws Exception {
-        TimeWindowedApproveeCounter counter = new TimeWindowedApproveeCounter(tangle, 0, Long.MAX_VALUE);
+        TimeWindowedApproveeCounter counter = new TimeWindowedApproveeCounter(tangle, MIN_DURATION, MAX_DURATION);
 
         List<TransactionViewModel> transactions = getTransactionChain(10);
 
@@ -122,7 +128,7 @@ public class TimeWindowedApproveeCounterTest {
             processedTransactions.add(transaction.getHash());
         }
 
-        final long count = counter.getCount(0, transactions.get(transactions.size() - 1).getHash(),
+        final long count = counter.getCount(Instant.EPOCH, transactions.get(transactions.size() - 1).getHash(),
                 processedTransactions);
         Assert.assertEquals(0, count);
     }

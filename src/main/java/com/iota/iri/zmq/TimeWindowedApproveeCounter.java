@@ -6,6 +6,8 @@ import com.iota.iri.storage.Tangle;
 import com.iota.iri.utils.dag.DAGHelper;
 import com.iota.iri.utils.dag.TraversalException;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HashSet;
 
 /**
@@ -17,15 +19,15 @@ class TimeWindowedApproveeCounter {
     private final long minTransactionAgeSeconds;
     private final long maxTransactionAgeSeconds;
 
-    TimeWindowedApproveeCounter(Tangle tangle, long minTransactionAgeSeconds, long maxTransactionAgeSeconds) {
+    TimeWindowedApproveeCounter(Tangle tangle, Duration minTransactionAge, Duration maxTransactionAge) {
         this.tangle = tangle;
-        this.minTransactionAgeSeconds = minTransactionAgeSeconds;
-        this.maxTransactionAgeSeconds = maxTransactionAgeSeconds;
+        this.minTransactionAgeSeconds = minTransactionAge.getSeconds();
+        this.maxTransactionAgeSeconds = maxTransactionAge.getSeconds();
     }
 
-    private boolean continueTraversal(long now, TransactionViewModel transactionViewModel) {
+    private boolean isOlderThanMaxAge(Instant now, TransactionViewModel transaction) {
         // stop the traversing as soon as the transaction is older than the max
-        final long age = now - transactionViewModel.getArrivalTime();
+        final long age = now.getEpochSecond() - transaction.getArrivalTime();
         return age <= maxTransactionAgeSeconds;
     }
 
@@ -36,9 +38,9 @@ class TimeWindowedApproveeCounter {
      * @param transaction transaction to check
      * @return true, if the arrival time is in the time window, false otherwise
      */
-    boolean isInTimeWindow(long now, TransactionViewModel transaction) {
+    boolean isInTimeWindow(Instant now, TransactionViewModel transaction) {
 
-        final long age = now - transaction.getArrivalTime();
+        final long age = now.getEpochSecond() - transaction.getArrivalTime();
         return (age >= minTransactionAgeSeconds && age <= maxTransactionAgeSeconds);
     }
 
@@ -49,17 +51,18 @@ class TimeWindowedApproveeCounter {
      *
      * @param now                     current time epoch in seconds
      * @param startingTransactionHash the starting point of the traversal
-     * @param processedTransactions   a set of hashes that shall be considered as "processed" already and that will
-     *                                consequently be ignored in the traversal
+     * @param processedTransactions   a set of hashes that is considered as "processed" and will consequently be ignored
+     *                                in the traversal. This set is updated during the traversal to include all the
+     *                                processed hashes.
      * @throws TraversalException if anything goes wrong while traversing the graph and processing the transactions
      */
-    long getCount(long now, Hash startingTransactionHash, HashSet<Hash> processedTransactions)
+    long getCount(Instant now, Hash startingTransactionHash, HashSet<Hash> processedTransactions)
             throws TraversalException {
 
         DAGHelper helper = DAGHelper.get(tangle);
 
         ValidTransactionCounter transactionCounter = new ValidTransactionCounter(now);
-        helper.traverseApprovees(startingTransactionHash, t -> continueTraversal(now, t), transactionCounter::consume,
+        helper.traverseApprovees(startingTransactionHash, t -> isOlderThanMaxAge(now, t), transactionCounter::count,
                 processedTransactions);
 
         return transactionCounter.getCount();
@@ -72,15 +75,15 @@ class TimeWindowedApproveeCounter {
      */
     private final class ValidTransactionCounter {
 
-        final long now;
+        final Instant now;
 
         long count = 0;
 
-        private ValidTransactionCounter(long now) {
+        private ValidTransactionCounter(Instant now) {
             this.now = now;
         }
 
-        private void consume(TransactionViewModel transactionViewModel) {
+        private void count(TransactionViewModel transactionViewModel) {
             if (isInTimeWindow(now, transactionViewModel)) {
                 count++;
             }

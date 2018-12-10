@@ -31,8 +31,8 @@ public class ZmqTransactionStatsPublisher {
     private static final String CONFIRMED_TRANSACTIONS_TOPIC = "ct5m2h";
     private static final String TOTAL_TRANSACTIONS_TOPIC = "t5m2h";
 
-    private static final long MIN_TRANSACTION_AGE_THRESHOLD = Duration.ofMinutes(5).getSeconds();
-    private static final long MAX_TRANSACTION_AGE_THRESHOLD = Duration.ofHours(2).getSeconds();
+    private static final Duration MIN_TRANSACTION_AGE_THRESHOLD = Duration.ofMinutes(5);
+    private static final Duration MAX_TRANSACTION_AGE_THRESHOLD = Duration.ofHours(2);
 
     private final Logger log = LoggerFactory.getLogger(ZmqTransactionStatsPublisher.class);
 
@@ -69,8 +69,7 @@ public class ZmqTransactionStatsPublisher {
         return () -> {
             while (!shuttingDown.get()) {
                 try {
-                    // the transaction arrival time is in seconds
-                    final long now = Instant.now().getEpochSecond();
+                    final Instant now = Instant.now();
 
                     final long numConfirmed = getConfirmedTransactionsCount(now);
                     final long numTransactions = getAllTransactionsCount(now);
@@ -97,12 +96,12 @@ public class ZmqTransactionStatsPublisher {
         return tips.get(0);
     }
 
-    private long getConfirmedTransactionsCount(long now) throws Exception {
+    private long getConfirmedTransactionsCount(Instant now) throws Exception {
 
         return approveeCounter.getCount(now, getSuperTip(), new HashSet<>());
     }
 
-    private long getAllTransactionsCount(long now) throws Exception {
+    private long getAllTransactionsCount(Instant now) throws Exception {
 
         // count all transactions in a scalable way, by counting the approvees of all the tips
         HashSet<Hash> processedTransactions = new HashSet<>();
@@ -110,9 +109,11 @@ public class ZmqTransactionStatsPublisher {
         for (Hash tip : tipsViewModel.getTips()) {
             // count the tip, if it is the valid time window
             if (approveeCounter.isInTimeWindow(now, TransactionViewModel.fromHash(tangle, tip))) {
-                count++;
+                count += 1 + approveeCounter.getCount(now, tip, processedTransactions);
+            } else {
+                // even if the tip is not in the time window, count approvees that might be older
+                count += approveeCounter.getCount(now, tip, processedTransactions);
             }
-            count += approveeCounter.getCount(now, tip, processedTransactions);
         }
 
         return count;
