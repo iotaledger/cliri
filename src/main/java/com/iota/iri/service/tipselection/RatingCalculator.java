@@ -30,5 +30,5 @@ public interface RatingCalculator {
      * @return  Map
      * @throws Exception If DB fails to retrieve transaction
      */
-    Integer calculateSingle(Hash transaction) throws Exception;
+    int calculateSingle(Hash transaction) throws Exception;
 }

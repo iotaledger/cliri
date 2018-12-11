@@ -46,7 +46,7 @@ public class RatingOne implements RatingCalculator {
     }
 
     @Override
-    public Integer calculateSingle(Hash transaction) throws Exception {
+    public int calculateSingle(Hash transaction) throws Exception {
         return 1;
     }
 
