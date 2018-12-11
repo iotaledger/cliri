@@ -34,7 +34,10 @@ public class EntryPointSelectorCumulativeWeightThreshold implements EntryPointSe
 
     @Override
     public Hash getEntryPoint() throws Exception {
-        return backtrack(tipsViewModel.getRandomSolidTipHash(), threshold);
+        Hash solidTip = tipsViewModel.getRandomSolidTipHash();
+        Objects.requireNonNull(solidTip, "Failed to get random tip, most likely a bootstrapping issue.");
+
+        return backtrack(solidTip, threshold);
     }
 
     public Hash backtrack(Hash tip, int threshold) throws Exception {
