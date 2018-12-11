@@ -61,7 +61,7 @@ public class TipsViewModel {
         synchronized (sync) {
             int size = solidTips.size();
             if (size == 0) {
-                return getRandomNonSolidTipHash();
+                return null;
             }
             int index = seed.nextInt(size);
             Iterator<Hash> hashIterator;
