@@ -19,9 +19,7 @@ import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.Mockito;
 
@@ -32,9 +30,6 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
     private static TipsViewModel tipsViewModel;
     private static Walker walker;
     private static WalkValidator walkValidator;
-
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
 
     @AfterClass
     public static void tearDown() throws Exception {

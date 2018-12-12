@@ -48,7 +48,9 @@ public class EntryPointSelectorCumulativeWeightThreshold implements EntryPointSe
     private Hash getTip() throws Exception {
         Hash solidTip = tipsViewModel.getRandomSolidTipHash();
 
-        solidTip = solidTip == null ? unbiasedWalk() : solidTip;
+        if (solidTip == null) {
+            solidTip = unbiasedWalk();
+        }
 
         return solidTip;
     }
