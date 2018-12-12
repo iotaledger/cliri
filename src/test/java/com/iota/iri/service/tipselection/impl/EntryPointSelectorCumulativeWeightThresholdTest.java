@@ -1,30 +1,37 @@
 package com.iota.iri.service.tipselection.impl;
 
-import com.iota.iri.controllers.TipsViewModel;
-import com.iota.iri.controllers.TransactionViewModel;
-import com.iota.iri.model.Hash;
-import com.iota.iri.service.tipselection.EntryPointSelector;
-import com.iota.iri.storage.Tangle;
-import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.Rule;
-import org.junit.rules.ExpectedException;
-import org.mockito.Mockito;
+import static com.iota.iri.controllers.TransactionViewModelTest.getRandomTransactionHash;
+import static com.iota.iri.controllers.TransactionViewModelTest.getRandomTransactionTrits;
+import static com.iota.iri.controllers.TransactionViewModelTest.getRandomTransactionWithTrunkAndBranch;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.iota.iri.controllers.TransactionViewModelTest.*;
+import com.iota.iri.controllers.TipsViewModel;
+import com.iota.iri.controllers.TransactionViewModel;
+import com.iota.iri.model.Hash;
+import com.iota.iri.service.tipselection.EntryPointSelector;
+import com.iota.iri.service.tipselection.WalkValidator;
+import com.iota.iri.service.tipselection.Walker;
+import com.iota.iri.storage.Tangle;
+import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
+
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.TemporaryFolder;
+import org.mockito.Mockito;
 
 public class EntryPointSelectorCumulativeWeightThresholdTest {
     private static final TemporaryFolder dbFolder = new TemporaryFolder();
     private static final TemporaryFolder logFolder = new TemporaryFolder();
     private static Tangle tangle;
     private static TipsViewModel tipsViewModel;
+    private static Walker walker;
+    private static WalkValidator walkValidator;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -58,7 +65,7 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
         final int threshold = 50;
         Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(transaction.getBundleHash());
         
-        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold);
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold, walker, walkValidator);
         Hash entryPoint = entryPointSelector.getEntryPoint();
 
         Assert.assertEquals(Hash.NULL_HASH, entryPoint);
@@ -86,7 +93,7 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
 
         Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(transactions.get(transactions.size() - 1).getHash());
         
-        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold);
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold, walker, walkValidator);
         Hash entryPoint = entryPointSelector.getEntryPoint();
 
         Assert.assertNotEquals(Hash.NULL_HASH, entryPoint);
@@ -122,21 +129,21 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
 
         Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(mainStalk.get(mainStalk.size() - 1).getHash());
         
-        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold);
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold, walker, walkValidator);
         Hash entryPoint = entryPointSelector.getEntryPoint();
 
         Assert.assertNotEquals(Hash.NULL_HASH, entryPoint);
         Assert.assertEquals(mainStalk.get(expectedStalkLevel).getHash(), entryPoint);
     }
 
-    @Test
-    public void failsWhenSolidTipIsNull() throws Exception {
+    public void callWalkerWhenSolidTipIsNull() throws Exception {
         final int threshold = 50;
         Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(null);
         
-        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold);
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold, walker, walkValidator);
 
-        exception.expect(NullPointerException.class);
         entryPointSelector.getEntryPoint();
+
+        Mockito.verify(walker, Mockito.times(1)).walk(Mockito.eq(Hash.NULL_HASH), Mockito.any(), Mockito.any());
     }
 }

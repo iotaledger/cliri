@@ -5,13 +5,17 @@ import java.util.Objects;
 import com.iota.iri.controllers.TipsViewModel;
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.Hash;
+import com.iota.iri.model.HashId;
 import com.iota.iri.service.tipselection.EntryPointSelector;
 import com.iota.iri.storage.Tangle;
+import com.iota.iri.utils.collections.interfaces.UnIterableMap;
+import com.iota.iri.service.tipselection.WalkValidator;
+import com.iota.iri.service.tipselection.Walker;
 
 import org.apache.commons.lang3.NotImplementedException;
 
 /**
- * Implementation of <tt>EntryPointSelector</tt> that backtracks via trunkTransaction
+ * Implementation of <tt>EntryPointSelector</tt> that backtracks via trunkTransaction 
  * until reaching a minimum Cumulative Weight or the genesis.
  */
 public class EntryPointSelectorCumulativeWeightThreshold implements EntryPointSelector {
@@ -19,12 +23,16 @@ public class EntryPointSelectorCumulativeWeightThreshold implements EntryPointSe
     private final CumulativeWeightCalculator cumulativeWeightCalculator;
     private final TipsViewModel tipsViewModel;
     private final int threshold;
+    private final Walker walker;
+    private final WalkValidator walkValidator;
 
-    public EntryPointSelectorCumulativeWeightThreshold(Tangle tangle, TipsViewModel tipsViewModel, int threshold) {
+    public EntryPointSelectorCumulativeWeightThreshold(Tangle tangle, TipsViewModel tipsViewModel, int threshold, Walker walker, WalkValidator walkValidator) {
         this.tangle = tangle;
         this.cumulativeWeightCalculator = new CumulativeWeightCalculator(tangle);
         this.tipsViewModel = tipsViewModel;
         this.threshold = threshold;
+        this.walker = walker;
+        this.walkValidator = walkValidator;
     }
 
     @Override
@@ -34,10 +42,26 @@ public class EntryPointSelectorCumulativeWeightThreshold implements EntryPointSe
 
     @Override
     public Hash getEntryPoint() throws Exception {
-        Hash solidTip = tipsViewModel.getRandomSolidTipHash();
-        Objects.requireNonNull(solidTip, "Failed to get random tip, most likely a bootstrapping issue.");
+        return backtrack(getTip(), threshold);
+    }
 
-        return backtrack(solidTip, threshold);
+    private Hash getTip() throws Exception {
+        Hash solidTip = tipsViewModel.getRandomSolidTipHash();
+
+        if (solidTip == null) {
+            solidTip = unbiasedWalk();
+        }
+
+        return solidTip;
+    }
+
+    private Hash unbiasedWalk() throws Exception {
+        // Start at the genesis
+        Hash genesis = Hash.NULL_HASH;
+
+        UnIterableMap<HashId, Integer> ratings = new RatingOne(tangle).calculate(genesis);
+        
+        return walker.walk(genesis, ratings, walkValidator);
     }
 
     /**
