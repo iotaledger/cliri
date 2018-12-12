@@ -11,6 +11,8 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.Rule;
+import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
 import java.util.ArrayList;
@@ -23,6 +25,9 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
     private static final TemporaryFolder logFolder = new TemporaryFolder();
     private static Tangle tangle;
     private static TipsViewModel tipsViewModel;
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     @AfterClass
     public static void tearDown() throws Exception {
@@ -122,5 +127,16 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
 
         Assert.assertNotEquals(Hash.NULL_HASH, entryPoint);
         Assert.assertEquals(mainStalk.get(expectedStalkLevel).getHash(), entryPoint);
+    }
+
+    @Test
+    public void failsWhenSolidTipIsNull() throws Exception {
+        final int threshold = 50;
+        Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(null);
+        
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold);
+
+        exception.expect(NullPointerException.class);
+        entryPointSelector.getEntryPoint();
     }
 }

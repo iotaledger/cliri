@@ -10,7 +10,7 @@ import com.iota.iri.model.Hash;
 
 public class TipsViewModel {
 
-    public static final int MAX_TIPS = 5000;
+    public static final int MAX_TIPS = 400;
 
     private final FifoHashCache<Hash> tips = new FifoHashCache<>(TipsViewModel.MAX_TIPS);
     private final FifoHashCache<Hash> solidTips = new FifoHashCache<>(TipsViewModel.MAX_TIPS);
@@ -61,7 +61,7 @@ public class TipsViewModel {
         synchronized (sync) {
             int size = solidTips.size();
             if (size == 0) {
-                return getRandomNonSolidTipHash();
+                return null;
             }
             int index = seed.nextInt(size);
             Iterator<Hash> hashIterator;
