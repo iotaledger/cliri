@@ -612,7 +612,7 @@ public class Node {
     }
     
     /**
-     * We send a tip request packet (the Genesis transaction)
+     * We send a tip request packet (A random tip or the Genesis if no tips are present)
      * to all of our neighbors periodically. 
      */    
     private Runnable spawnTipRequesterThread() {
