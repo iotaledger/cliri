@@ -19,7 +19,9 @@ import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.Mockito;
 
@@ -30,6 +32,9 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
     private static TipsViewModel tipsViewModel;
     private static Walker walker;
     private static WalkValidator walkValidator;
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     @AfterClass
     public static void tearDown() throws Exception {
@@ -47,8 +52,6 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
         tangle.init();
 
         tipsViewModel = Mockito.mock(TipsViewModel.class);
-        walker = Mockito.mock(Walker.class);
-        walkValidator = Mockito.mock(WalkValidator.class);
     }
 
     @Test
@@ -70,12 +73,15 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
 
     @Test
     public void returnsCorrectTxInChain() throws Exception {
-        int threshold = 5;
+        final int threshold = 5;
+        final int chainLength = 30;
+        final int expectedEntrypoint = chainLength - 7;
+        
         List<TransactionViewModel> transactions = new ArrayList<TransactionViewModel>();
 
         transactions.add(new TransactionViewModel(getRandomTransactionTrits(), getRandomTransactionHash()));
 
-        for (int i=0; i<10; i++) {
+        for (int i = 0; i < chainLength; i++) {
             Hash prevTxHash = transactions.get(transactions.size() - 1).getHash();
             transactions.add(new TransactionViewModel(
                 getRandomTransactionWithTrunkAndBranch(prevTxHash, prevTxHash), getRandomTransactionHash()));
@@ -91,10 +97,45 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
         Hash entryPoint = entryPointSelector.getEntryPoint();
 
         Assert.assertNotEquals(Hash.NULL_HASH, entryPoint);
-        Assert.assertEquals(transactions.get(transactions.size() - threshold).getHash(), entryPoint);
+        Assert.assertEquals(transactions.get(expectedEntrypoint).getHash(), entryPoint);
     }
 
     @Test
+    public void returnsCorrectTxInWheatStockShape() throws Exception {
+        final int threshold = 15;
+        final int stalkLevels = 15;
+        final int txPerLevel = 5;
+        final int expectedStalkLevel = stalkLevels - 4;
+        
+        List<TransactionViewModel> mainStalk = new ArrayList<TransactionViewModel>();
+
+        mainStalk.add(new TransactionViewModel(getRandomTransactionTrits(), getRandomTransactionHash()));
+        mainStalk.get(0).store(tangle);
+
+        for (int i = 0; i < stalkLevels - 1; i++) {
+            Hash prevTxHash = mainStalk.get(mainStalk.size() - 1).getHash();
+            TransactionViewModel mainStalkTx = new TransactionViewModel(
+                getRandomTransactionWithTrunkAndBranch(prevTxHash, prevTxHash), getRandomTransactionHash());
+
+            mainStalk.add(mainStalkTx);
+            mainStalkTx.store(tangle);
+            
+            for (int j = 0; j < txPerLevel; j++) {
+                new TransactionViewModel(
+                    getRandomTransactionWithTrunkAndBranch(mainStalkTx.getHash(), mainStalkTx.getHash()), getRandomTransactionHash())
+                    .store(tangle);
+            }
+        }
+
+        Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(mainStalk.get(mainStalk.size() - 1).getHash());
+        
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold, walker, walkValidator);
+        Hash entryPoint = entryPointSelector.getEntryPoint();
+
+        Assert.assertNotEquals(Hash.NULL_HASH, entryPoint);
+        Assert.assertEquals(mainStalk.get(expectedStalkLevel).getHash(), entryPoint);
+    }
+
     public void callWalkerWhenSolidTipIsNull() throws Exception {
         final int threshold = 50;
         Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(null);

@@ -45,7 +45,7 @@ public class CumulativeWeightCalculator implements RatingCalculator{
     }
 
     @Override
-    public Integer calculateSingle(Hash transaction) throws Exception {
+    public int calculateSingle(Hash transaction) throws Exception {
         LinkedHashSet<Hash> futureSet = sortTransactionsInTopologicalOrder(transaction);
         return futureSet.size();
     }
