@@ -9,7 +9,7 @@ import com.iota.iri.network.TransactionRequester;
 import com.iota.iri.network.UDPReceiver;
 import com.iota.iri.network.replicator.Replicator;
 import com.iota.iri.service.TipsSolidifier;
-import com.iota.iri.zmq.ZmqTransactionStatsPublisher;
+import com.iota.iri.service.stats.TransactionStatsPublisher;
 import com.iota.iri.service.tipselection.*;
 import com.iota.iri.service.tipselection.impl.*;
 import com.iota.iri.storage.*;
@@ -62,7 +62,7 @@ public class Iota {
     public final Tangle tangle;
     public final TransactionValidator transactionValidator;
     public final TipsSolidifier tipsSolidifier;
-    public final ZmqTransactionStatsPublisher zmqTransactionStatsPublisher;
+    public final TransactionStatsPublisher transactionStatsPublisher;
     public final TransactionRequester transactionRequester;
     public final Node node;
     public final UDPReceiver udpReceiver;
@@ -91,7 +91,7 @@ public class Iota {
         ledgerValidator = new LedgerValidatorImpl();
         tipsSolidifier = new TipsSolidifier(tangle, transactionValidator, tipsViewModel);
         tipsSelector = createTipSelector(configuration);
-        zmqTransactionStatsPublisher = new ZmqTransactionStatsPublisher(tangle, tipsViewModel, tipsSelector, messageQ);
+        transactionStatsPublisher = new TransactionStatsPublisher(tangle, tipsViewModel, tipsSelector, messageQ);
     }
 
     /**
@@ -111,7 +111,7 @@ public class Iota {
         }
 
         if (configuration.isZmqEnabled()) {
-            zmqTransactionStatsPublisher.init();
+            transactionStatsPublisher.init();
         }
         transactionValidator.init(configuration.isTestnet(), configuration.getMwm());
         tipsSolidifier.init();
@@ -149,7 +149,7 @@ public class Iota {
      * Exceptions during shutdown are not caught.
      */
     public void shutdown() throws Exception {
-        zmqTransactionStatsPublisher.shutdown();
+        transactionStatsPublisher.shutdown();
         tipsSolidifier.shutdown();
         node.shutdown();
         udpReceiver.shutdown();

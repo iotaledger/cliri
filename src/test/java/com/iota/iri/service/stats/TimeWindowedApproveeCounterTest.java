@@ -1,4 +1,4 @@
-package com.iota.iri.zmq;
+package com.iota.iri.service.stats;
 
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.Hash;

@@ -1,4 +1,4 @@
-package com.iota.iri.zmq;
+package com.iota.iri.service.stats;
 
 import com.iota.iri.controllers.TipsViewModel;
 import com.iota.iri.controllers.TransactionViewModel;
@@ -6,6 +6,7 @@ import com.iota.iri.model.Hash;
 import com.iota.iri.service.tipselection.TipSelector;
 import com.iota.iri.storage.Tangle;
 
+import com.iota.iri.zmq.MessageQ;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * For the confirmed transactions, the normal tip selection is performed to determine a supertip. The number of
  * transactions in its past set is then published to ZMQ.
  */
-public class ZmqTransactionStatsPublisher {
+public class TransactionStatsPublisher {
 
     private static final long PUBLISH_INTERVAL = Duration.ofMinutes(1).toMillis();
 
@@ -34,7 +35,7 @@ public class ZmqTransactionStatsPublisher {
     private static final Duration MIN_TRANSACTION_AGE_THRESHOLD = Duration.ofMinutes(5);
     private static final Duration MAX_TRANSACTION_AGE_THRESHOLD = Duration.ofHours(2);
 
-    private final Logger log = LoggerFactory.getLogger(ZmqTransactionStatsPublisher.class);
+    private final Logger log = LoggerFactory.getLogger(TransactionStatsPublisher.class);
 
     private final Tangle tangle;
     private final TipsViewModel tipsViewModel;
@@ -46,7 +47,7 @@ public class ZmqTransactionStatsPublisher {
     private final AtomicBoolean shuttingDown = new AtomicBoolean(false);
     private Thread thread;
 
-    public ZmqTransactionStatsPublisher(Tangle tangle, TipsViewModel tipsViewModel, TipSelector tipsSelector,
+    public TransactionStatsPublisher(Tangle tangle, TipsViewModel tipsViewModel, TipSelector tipsSelector,
             MessageQ messageQ) {
 
         this.tangle = tangle;
