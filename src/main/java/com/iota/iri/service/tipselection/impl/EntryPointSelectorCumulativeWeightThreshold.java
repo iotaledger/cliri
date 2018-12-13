@@ -26,7 +26,7 @@ public class EntryPointSelectorCumulativeWeightThreshold implements EntryPointSe
     private final Walker walker;
     private final WalkValidator walkValidator;
 
-    public static int MAX_SUBTANGLE_SIZE = CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE;
+    public static int MAX_SUBTANGLE_SIZE = 4 * CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE;
 
     public EntryPointSelectorCumulativeWeightThreshold(Tangle tangle, TipsViewModel tipsViewModel, int threshold, Walker walker, WalkValidator walkValidator) {
         this.tangle = tangle;
