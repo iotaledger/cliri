@@ -11,8 +11,6 @@ import com.iota.iri.controllers.TipsViewModel;
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.Hash;
 import com.iota.iri.service.tipselection.EntryPointSelector;
-import com.iota.iri.service.tipselection.WalkValidator;
-import com.iota.iri.service.tipselection.Walker;
 import com.iota.iri.storage.Tangle;
 import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
 
@@ -30,8 +28,6 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
     private static final TemporaryFolder logFolder = new TemporaryFolder();
     private static Tangle tangle;
     private static TipsViewModel tipsViewModel;
-    private static Walker walker;
-    private static WalkValidator walkValidator;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -65,7 +61,7 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
         final int threshold = 50;
         Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(transaction.getBundleHash());
         
-        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold, walker, walkValidator);
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold);
         Hash entryPoint = entryPointSelector.getEntryPoint();
 
         Assert.assertEquals(Hash.NULL_HASH, entryPoint);
@@ -93,7 +89,7 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
 
         Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(transactions.get(transactions.size() - 1).getHash());
         
-        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold, walker, walkValidator);
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold);
         Hash entryPoint = entryPointSelector.getEntryPoint();
 
         Assert.assertNotEquals(Hash.NULL_HASH, entryPoint);
@@ -129,21 +125,52 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
 
         Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(mainStalk.get(mainStalk.size() - 1).getHash());
         
-        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold, walker, walkValidator);
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold);
         Hash entryPoint = entryPointSelector.getEntryPoint();
 
         Assert.assertNotEquals(Hash.NULL_HASH, entryPoint);
         Assert.assertEquals(mainStalk.get(expectedStalkLevel).getHash(), entryPoint);
     }
 
-    public void callWalkerWhenSolidTipIsNull() throws Exception {
+    @Test
+    public void chooseHeighestTipWhenSolidTipIsGone() throws Exception {
+        // Three chains, expect to end up on the longest
         final int threshold = 50;
-        Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(null);
         
-        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold, walker, walkValidator);
+        // Two chains
+        final int shortChainLength = CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE * 3;
+        final int mediumChainLength = CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE * 4;
+        final int longChainLength = CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE * 5;
 
-        entryPointSelector.getEntryPoint();
+        List<Hash> shortChain = makeChain(shortChainLength);
+        List<Hash> mediumChain = makeChain(mediumChainLength);
+        List<Hash> longChain = makeChain(longChainLength);
 
-        Mockito.verify(walker, Mockito.times(1)).walk(Mockito.eq(Hash.NULL_HASH), Mockito.any(), Mockito.any());
+        Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(null);
+
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold);
+
+        Hash entryPoint = entryPointSelector.getEntryPoint();
+
+        Assert.assertTrue(longChain.contains(entryPoint));
+        Assert.assertFalse(mediumChain.contains(entryPoint));
+        Assert.assertFalse(shortChain.contains(entryPoint));
+    }
+
+    private List<Hash> makeChain(int length) throws Exception {
+        List<Hash> chain = new ArrayList<>();
+
+        // start from genesis
+        Hash tip = Hash.NULL_HASH;
+
+        for (int i = 0; i < length; i++) {
+            TransactionViewModel newTip = new TransactionViewModel(
+                getRandomTransactionWithTrunkAndBranch(tip, tip), getRandomTransactionHash());
+            newTip.store(tangle);
+            tip = newTip.getHash();
+            chain.add(tip);
+        }
+
+        return chain;
     }
 }
