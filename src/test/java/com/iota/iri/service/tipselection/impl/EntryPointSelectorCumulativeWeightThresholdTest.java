@@ -73,7 +73,7 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
     public void returnsCorrectTxInChain() throws Exception {
         final int threshold = 5;
         final int chainLength = 30;
-        final int expectedEntrypoint = chainLength - 7;
+        final int expectedEntrypoint = chainLength - 3;
         
         List<TransactionViewModel> transactions = new ArrayList<TransactionViewModel>();
 
@@ -103,7 +103,7 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
         final int threshold = 15;
         final int stalkLevels = 15;
         final int txPerLevel = 5;
-        final int expectedStalkLevel = stalkLevels - 4;
+        final int expectedStalkLevel = stalkLevels - 2;
         
         List<TransactionViewModel> mainStalk = new ArrayList<TransactionViewModel>();
 
