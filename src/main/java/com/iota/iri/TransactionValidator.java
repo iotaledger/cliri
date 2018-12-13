@@ -427,12 +427,12 @@ public class TransactionValidator {
      * @throws Exception if we encounter an error while requesting a transaction
      */
     private boolean checkApproovee(TransactionViewModel approovee) throws Exception {
+        if(approovee.getHash().equals(Hash.NULL_HASH)) {
+            return true;
+        }
         if(approovee.getType() == PREFILLED_SLOT) {
             transactionRequester.requestTransaction(approovee.getHash());
             return false;
-        }
-        if(approovee.getHash().equals(Hash.NULL_HASH)) {
-            return true;
         }
         return approovee.isSolid();
     }
