@@ -69,7 +69,7 @@ public class EntryPointSelectorCumulativeWeightThreshold implements EntryPointSe
      * heights, defined to be the distance from the genesis.
      * @return a map from transactions to heights, ordered in ascending height order
      */
-    Hash getHeighestTip() throws Exception {
+    private Hash getHeighestTip() throws Exception {
         HashSet<Hash> visited = new HashSet<>();
   
         // Create a queue for BFS
