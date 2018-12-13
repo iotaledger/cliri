@@ -26,6 +26,8 @@ public class EntryPointSelectorCumulativeWeightThreshold implements EntryPointSe
     private final Walker walker;
     private final WalkValidator walkValidator;
 
+    public static int MAX_SUBTANGLE_SIZE = 4 * CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE;
+
     public EntryPointSelectorCumulativeWeightThreshold(Tangle tangle, TipsViewModel tipsViewModel, int threshold, Walker walker, WalkValidator walkValidator) {
         this.tangle = tangle;
         this.cumulativeWeightCalculator = new CumulativeWeightCalculator(tangle);
@@ -42,7 +44,16 @@ public class EntryPointSelectorCumulativeWeightThreshold implements EntryPointSe
 
     @Override
     public Hash getEntryPoint() throws Exception {
-        return backtrack(getTip(), threshold);
+        Hash entryPoint = backtrack(getTip(), threshold);
+
+        int subtangleWeight = cumulativeWeightCalculator.calculateSingle(entryPoint);
+        if (subtangleWeight > MAX_SUBTANGLE_SIZE) {
+            throw new IllegalStateException(String.format(
+                "The selected entry point's subtangle size is too big. EntryPoint Hash: %s Subtangle size: %d",
+                entryPoint, subtangleWeight));
+        }
+
+        return entryPoint;
     }
 
     private Hash getTip() throws Exception {

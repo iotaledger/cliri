@@ -146,4 +146,64 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
 
         Mockito.verify(walker, Mockito.times(1)).walk(Mockito.eq(Hash.NULL_HASH), Mockito.any(), Mockito.any());
     }
+
+    @Test
+    public void failWhenEntryPointSizeIsTooBig() throws Exception {
+        // The scenario is two chains attached to the genesis: very long and very short.
+        // The random tip function returns the short chain's tip.
+        final int threshold = 10;
+        final int longChainLength = EntryPointSelectorCumulativeWeightThreshold.MAX_SUBTANGLE_SIZE + 50;
+        final int shortChainLength = 2;
+        Hash longChainTip = Hash.NULL_HASH;
+        Hash shortChainTip= Hash.NULL_HASH;
+
+        for (int i = 0; i < longChainLength; i++) {
+            TransactionViewModel newTip = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(longChainTip, longChainTip), getRandomTransactionHash());
+            newTip.store(tangle);
+            longChainTip = newTip.getHash();
+        }
+
+        for (int i = 0; i < shortChainLength; i++) {
+            TransactionViewModel newTip = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(shortChainTip, shortChainTip), getRandomTransactionHash());
+            newTip.store(tangle);
+            shortChainTip = newTip.getHash();
+        }
+
+        Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(shortChainTip);
+        
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold, walker, walkValidator);
+
+        exception.expect(IllegalStateException.class);
+        entryPointSelector.getEntryPoint();
+    }
+
+    @Test
+    public void succeedWhenEntryPointSizeIsJustRight() throws Exception {
+        // Two chains
+        final int threshold = 10;
+        final int longChainLength = (int)(EntryPointSelectorCumulativeWeightThreshold.MAX_SUBTANGLE_SIZE / 2.5);
+        final int shortChainLength = 2;
+        Hash longChainTip = Hash.NULL_HASH;
+        Hash shortChainTip= Hash.NULL_HASH;
+
+        for (int i = 0; i < longChainLength; i++) {
+            TransactionViewModel newTip = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(longChainTip, longChainTip), getRandomTransactionHash());
+            newTip.store(tangle);
+            longChainTip = newTip.getHash();
+        }
+
+        for (int i = 0; i < shortChainLength; i++) {
+            TransactionViewModel newTip = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(shortChainTip, shortChainTip), getRandomTransactionHash());
+            newTip.store(tangle);
+            shortChainTip = newTip.getHash();
+        }
+
+        Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(shortChainTip);
+        
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold, walker, walkValidator);
+
+        Hash entryPoint = entryPointSelector.getEntryPoint();
+
+        Assert.assertEquals(Hash.NULL_HASH, entryPoint);
+    }
 }
