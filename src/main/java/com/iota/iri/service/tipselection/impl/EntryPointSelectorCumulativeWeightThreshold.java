@@ -15,7 +15,7 @@ import com.iota.iri.storage.Tangle;
 import org.apache.commons.lang3.NotImplementedException;
 
 /**
- * Implementation of <tt>EntryPointSelector</tt> that backtracks via trunkTransaction
+ * Implementation of <tt>EntryPointSelector</tt> that backtracks via trunkTransaction 
  * until reaching a minimum Cumulative Weight or the genesis.
  */
 public class EntryPointSelectorCumulativeWeightThreshold implements EntryPointSelector {
@@ -23,6 +23,8 @@ public class EntryPointSelectorCumulativeWeightThreshold implements EntryPointSe
     private final CumulativeWeightCalculator cumulativeWeightCalculator;
     private final TipsViewModel tipsViewModel;
     private final int threshold;
+
+    public static int MAX_SUBTANGLE_SIZE = 4 * CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE;
 
     public EntryPointSelectorCumulativeWeightThreshold(Tangle tangle, TipsViewModel tipsViewModel, int threshold) {
         this.tangle = tangle;
@@ -38,7 +40,16 @@ public class EntryPointSelectorCumulativeWeightThreshold implements EntryPointSe
 
     @Override
     public Hash getEntryPoint() throws Exception {
-        return backtrack(getTip(), threshold);
+        Hash entryPoint = backtrack(getTip(), threshold);
+
+        int subtangleWeight = cumulativeWeightCalculator.calculateSingle(entryPoint);
+        if (subtangleWeight > MAX_SUBTANGLE_SIZE) {
+            throw new IllegalStateException(String.format(
+                "The selected entry point's subtangle size is too big. EntryPoint Hash: %s Subtangle size: %d",
+                entryPoint, subtangleWeight));
+        }
+
+        return entryPoint;
     }
 
     private Hash getTip() throws Exception {

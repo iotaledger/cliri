@@ -14,9 +14,9 @@ import com.iota.iri.service.tipselection.EntryPointSelector;
 import com.iota.iri.storage.Tangle;
 import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
 
-import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Assert;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -24,22 +24,24 @@ import org.junit.rules.TemporaryFolder;
 import org.mockito.Mockito;
 
 public class EntryPointSelectorCumulativeWeightThresholdTest {
-    private static final TemporaryFolder dbFolder = new TemporaryFolder();
-    private static final TemporaryFolder logFolder = new TemporaryFolder();
-    private static Tangle tangle;
-    private static TipsViewModel tipsViewModel;
+    private TemporaryFolder dbFolder;
+    private TemporaryFolder logFolder;
+    private Tangle tangle;
+    private TipsViewModel tipsViewModel;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    @AfterClass
-    public static void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         tangle.shutdown();
         dbFolder.delete();
     }
 
-    @BeforeClass
-    public static void setUp() throws Exception {
+    @Before
+    public void setUp() throws Exception {
+        dbFolder = new TemporaryFolder();
+        logFolder = new TemporaryFolder();
         tangle = new Tangle();
         dbFolder.create();
         logFolder.create();
@@ -155,6 +157,56 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
         Assert.assertTrue(longChain.contains(entryPoint));
         Assert.assertFalse(mediumChain.contains(entryPoint));
         Assert.assertFalse(shortChain.contains(entryPoint));
+    }
+
+    @Test
+    public void failWhenEntryPointSizeIsTooBig() throws Exception {
+        // The scenario is two chains attached to the genesis: very long and very short.
+        // The random tip function returns the short chain's tip.
+        final int threshold = 10;
+        final int longChainLength = EntryPointSelectorCumulativeWeightThreshold.MAX_SUBTANGLE_SIZE + 50;
+        final int shortChainLength = 2;
+        Hash longChainTip = Hash.NULL_HASH;
+        Hash shortChainTip= Hash.NULL_HASH;
+
+        for (int i = 0; i < longChainLength; i++) {
+            TransactionViewModel newTip = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(longChainTip, longChainTip), getRandomTransactionHash());
+            newTip.store(tangle);
+            longChainTip = newTip.getHash();
+        }
+
+        for (int i = 0; i < shortChainLength; i++) {
+            TransactionViewModel newTip = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(shortChainTip, shortChainTip), getRandomTransactionHash());
+            newTip.store(tangle);
+            shortChainTip = newTip.getHash();
+        }
+
+        Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(shortChainTip);
+        
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold);
+
+        exception.expect(IllegalStateException.class);
+        entryPointSelector.getEntryPoint();
+    }
+
+    @Test
+    public void succeedWhenEntryPointSizeIsJustRight() throws Exception {
+        // Two chains
+        final int threshold = 10;
+        final int longChainLength = (int)(EntryPointSelectorCumulativeWeightThreshold.MAX_SUBTANGLE_SIZE / 2.5);
+        final int shortChainLength = 2;
+        
+        makeChain(longChainLength);
+        List<Hash> shortChain = makeChain(shortChainLength);
+
+        // Start from the short chain, so we start the BFS from the genesis
+        Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(shortChain.get(shortChain.size() - 1));
+        
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold);
+
+        Hash entryPoint = entryPointSelector.getEntryPoint();
+
+        Assert.assertEquals(Hash.NULL_HASH, entryPoint);
     }
 
     private List<Hash> makeChain(int length) throws Exception {
