@@ -1,16 +1,16 @@
 package com.iota.iri.service.tipselection.impl;
 
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Objects;
+import java.util.Queue;
 
+import com.iota.iri.controllers.ApproveeViewModel;
 import com.iota.iri.controllers.TipsViewModel;
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.Hash;
-import com.iota.iri.model.HashId;
 import com.iota.iri.service.tipselection.EntryPointSelector;
 import com.iota.iri.storage.Tangle;
-import com.iota.iri.utils.collections.interfaces.UnIterableMap;
-import com.iota.iri.service.tipselection.WalkValidator;
-import com.iota.iri.service.tipselection.Walker;
 
 import org.apache.commons.lang3.NotImplementedException;
 
@@ -23,18 +23,14 @@ public class EntryPointSelectorCumulativeWeightThreshold implements EntryPointSe
     private final CumulativeWeightCalculator cumulativeWeightCalculator;
     private final TipsViewModel tipsViewModel;
     private final int threshold;
-    private final Walker walker;
-    private final WalkValidator walkValidator;
 
     public static int MAX_SUBTANGLE_SIZE = 4 * CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE;
 
-    public EntryPointSelectorCumulativeWeightThreshold(Tangle tangle, TipsViewModel tipsViewModel, int threshold, Walker walker, WalkValidator walkValidator) {
+    public EntryPointSelectorCumulativeWeightThreshold(Tangle tangle, TipsViewModel tipsViewModel, int threshold) {
         this.tangle = tangle;
         this.cumulativeWeightCalculator = new CumulativeWeightCalculator(tangle);
         this.tipsViewModel = tipsViewModel;
         this.threshold = threshold;
-        this.walker = walker;
-        this.walkValidator = walkValidator;
     }
 
     @Override
@@ -60,19 +56,44 @@ public class EntryPointSelectorCumulativeWeightThreshold implements EntryPointSe
         Hash solidTip = tipsViewModel.getRandomSolidTipHash();
 
         if (solidTip == null) {
-            solidTip = unbiasedWalk();
+            // If there are no known tips, start walking from the genesis
+            // and choose the heighest tip
+            solidTip = getHeighestTip();
         }
 
         return solidTip;
     }
 
-    private Hash unbiasedWalk() throws Exception {
-        // Start at the genesis
-        Hash genesis = Hash.NULL_HASH;
+    /**
+     * Perform BFS scan from the genesis to find all transactions'
+     * heights, defined to be the distance from the genesis.
+     * @return a map from transactions to heights, ordered in ascending height order
+     */
+    private Hash getHeighestTip() throws Exception {
+        HashSet<Hash> visited = new HashSet<>();
+  
+        // Create a queue for BFS
+        Queue<Hash> queue = new LinkedList<>(); 
+  
+        // Mark the genesis as visited with distance 0, and enqueue it 
+        visited.add(Hash.NULL_HASH);
+        queue.add(Hash.NULL_HASH); 
+  
+        Hash currentHash = Hash.NULL_HASH;
+        while (queue.size() != 0) 
+        { 
+            currentHash = queue.poll(); 
+  
+            // Get all approvers, add unvisited to queue and add them to the visited set
+            for (Hash approver : ApproveeViewModel.load(tangle, currentHash).getHashes()) {
+                if (!visited.contains(approver)) {
+                    visited.add(approver);
+                    queue.add(approver);
+                }
+            }
+        } 
 
-        UnIterableMap<HashId, Integer> ratings = new RatingOne(tangle).calculate(genesis);
-        
-        return walker.walk(genesis, ratings, walkValidator);
+        return currentHash;
     }
 
     /**
