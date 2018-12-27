@@ -25,6 +25,7 @@ import ch.qos.logback.core.util.Duration;
  * to cap hard disk usage until local snapshots are merged into CLIRI.
  */
 public class DatabaseRecycler {
+    public final long acceptableLatency = Duration.buildByMinutes(10).getMilliseconds();
 
     private final Logger log = LoggerFactory.getLogger(TipsSolidifier.class);
 
@@ -56,7 +57,7 @@ public class DatabaseRecycler {
     protected final Runnable recycle = new Runnable() {
         public void run() {
             log.info(String.format("Recycling database at %s", new Date().toString()));
-            TransactionValidator.setLatestEpochTimestamp(System.currentTimeMillis());
+            TransactionValidator.setLatestEpochTimestamp(System.currentTimeMillis() - acceptableLatency);
             transactionRequester.clearQueue();
             tipsViewModel.clear();
 
