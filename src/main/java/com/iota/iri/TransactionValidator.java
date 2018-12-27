@@ -26,6 +26,8 @@ public class TransactionValidator {
     private final TipsViewModel tipsViewModel;
     private final TransactionRequester transactionRequester;
     private int minWeightMagnitude = 81;
+    private static long snapshotTimestamp;
+    private static long snapshotTimestampMs;
     private static final long MAX_TIMESTAMP_FUTURE = 2L * 60L * 60L;
     private static final long MAX_TIMESTAMP_FUTURE_MS = MAX_TIMESTAMP_FUTURE * 1_000L;
 
@@ -60,6 +62,12 @@ public class TransactionValidator {
         this.tangle = tangle;
         this.tipsViewModel = tipsViewModel;
         this.transactionRequester = transactionRequester;
+        TransactionValidator.setLatestEpochTimestamp(0);
+    }
+
+    static public void setLatestEpochTimestamp(long snapshotTimestamp) {
+        TransactionValidator.snapshotTimestamp = snapshotTimestamp;
+        TransactionValidator.snapshotTimestampMs = snapshotTimestamp * 1000;
     }
 
     /**
@@ -126,12 +134,12 @@ public class TransactionValidator {
      */
     private boolean hasInvalidTimestamp(TransactionViewModel transactionViewModel) {
         if (transactionViewModel.getAttachmentTimestamp() == 0) {
-            return transactionViewModel.getTimestamp() < 0
+            return transactionViewModel.getTimestamp() < TransactionValidator.snapshotTimestamp
                     //you are valid if you are the genesis
                     && !Objects.equals(transactionViewModel.getHash(), Hash.NULL_HASH)
                     || transactionViewModel.getTimestamp() > (System.currentTimeMillis() / 1000) + MAX_TIMESTAMP_FUTURE;
         }
-        return transactionViewModel.getAttachmentTimestamp() < 0
+        return transactionViewModel.getAttachmentTimestamp() < TransactionValidator.snapshotTimestampMs
                 || transactionViewModel.getAttachmentTimestamp() > System.currentTimeMillis() + MAX_TIMESTAMP_FUTURE_MS;
     }
 
