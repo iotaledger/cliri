@@ -15,8 +15,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.Mockito;
 
-import java.util.Arrays;
-
 import static com.iota.iri.controllers.TransactionViewModelTest.*;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -24,16 +22,11 @@ import static org.junit.Assert.assertTrue;
 public class TransactionValidatorTest {
 
   private static final int MAINNET_MWM = 14;
+  private static final int ZERO_MWM = 0;
   private static final TemporaryFolder dbFolder = new TemporaryFolder();
   private static final TemporaryFolder logFolder = new TemporaryFolder();
   private static Tangle tangle;
   private static TransactionValidator txValidator;
-  private static byte[] zeroValue = new byte[TransactionViewModel.VALUE_TRINARY_SIZE];
-
-  {
-    Arrays.fill(zeroValue, (byte) 0);
-  }
-
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -203,26 +196,26 @@ public class TransactionValidatorTest {
   @Test
   public void validateCorrectTimestamp() throws Exception {
     TransactionViewModel tx = getValidTxWithoutBranchAndTrunk(0, 0);
-    txValidator.runValidation(tx, 0);
+    txValidator.runValidation(tx, ZERO_MWM);
   }
 
   @Test(expected = TransactionValidator.StaleTimestampException.class)
   public void failOnValidateInCorrectTimestamp() throws Exception {
     TransactionViewModel tx = getValidTxWithoutBranchAndTrunk(0, -1);
-    txValidator.runValidation(tx, 0);
+    txValidator.runValidation(tx, ZERO_MWM);
   }
 
   @Test
   public void validateCurrentTimestamp() throws Exception {
     TransactionViewModel tx = getValidTxWithoutBranchAndTrunk(0, System.currentTimeMillis() / 1000);
-    txValidator.runValidation(tx, 0);
+    txValidator.runValidation(tx, ZERO_MWM);
   }
 
   @Test(expected = TransactionValidator.StaleTimestampException.class)
   public void validate3HrFutureTimestamp() throws Exception {
     long threeHours = 60*60*3;
     TransactionViewModel tx = getValidTxWithoutBranchAndTrunk(0, System.currentTimeMillis() / 1000 + threeHours);
-    txValidator.runValidation(tx, 0);
+    txValidator.runValidation(tx, ZERO_MWM);
   }
 
   @Test
@@ -230,7 +223,7 @@ public class TransactionValidatorTest {
     long threeHours = 60*60*3;
     TransactionViewModel tx = getValidTxWithoutBranchAndTrunk(0, threeHours);
     TransactionValidator.setLatestEpochTimestamp(threeHours - 10);
-    txValidator.runValidation(tx, 0);
+    txValidator.runValidation(tx, ZERO_MWM);
     TransactionValidator.setLatestEpochTimestamp(0);
   }
 
@@ -239,7 +232,7 @@ public class TransactionValidatorTest {
     long threeHours = 60*60*3;
     TransactionViewModel tx = getValidTxWithoutBranchAndTrunk(0, threeHours);
     TransactionValidator.setLatestEpochTimestamp(threeHours + 10);
-    txValidator.runValidation(tx, 0);
+    txValidator.runValidation(tx, ZERO_MWM);
     TransactionValidator.setLatestEpochTimestamp(0);
 
   }
