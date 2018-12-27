@@ -111,6 +111,13 @@ public class TipsViewModel {
         }
     }
 
+    public void clear() {
+        synchronized (sync) {
+            tips.clear();
+            solidTips.clear();
+        }
+    }
+
     private class FifoHashCache<K> {
 
         private final int capacity;
@@ -143,6 +150,10 @@ public class TipsViewModel {
 
         public Iterator<K> iterator() {
             return this.set.iterator();
+        }
+
+        public void clear() {
+            set.clear();
         }
     }
 

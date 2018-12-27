@@ -112,6 +112,11 @@ public class TransactionValidator {
         newSolidThread.join();
     }
 
+    public void clear() throws Exception {
+        newSolidTransactionsOne.clear();
+        newSolidTransactionsTwo.clear();
+    }
+
     /**
      * @return the minimal number of trailing 9s that have to be present at the end of the transaction hash
      * in order to validate that sufficient proof of work has been done
