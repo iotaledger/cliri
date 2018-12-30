@@ -1,9 +1,9 @@
 package com.iota.iri;
 
-import com.iota.iri.conf.MainnetConfig;
 import com.iota.iri.controllers.TipsViewModel;
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.crypto.SpongeFactory;
+import com.iota.iri.model.Hash;
 import com.iota.iri.model.TransactionHash;
 import com.iota.iri.network.TransactionRequester;
 import com.iota.iri.storage.Tangle;
@@ -23,6 +23,7 @@ import static org.junit.Assert.assertTrue;
 public class TransactionValidatorTest {
 
   private static final int MAINNET_MWM = 14;
+  private static final int ZERO_MWM = 0;
   private static final TemporaryFolder dbFolder = new TemporaryFolder();
   private static final TemporaryFolder logFolder = new TemporaryFolder();
   private static Tangle tangle;
@@ -193,8 +194,84 @@ public class TransactionValidatorTest {
     assertFalse("GrandParent tx was expected to be not solid", grandParent.isSolid());
   }
 
+  @Test
+  public void validateCorrectTimestamp() throws Exception {
+    TransactionViewModel tx = getValidTxWithoutBranchAndTrunk(0, 0);
+    txValidator.runValidation(tx, ZERO_MWM);
+  }
+
+  @Test(expected = TransactionValidator.StaleTimestampException.class)
+  public void failOnValidateInCorrectTimestamp() throws Exception {
+    TransactionViewModel tx = getValidTxWithoutBranchAndTrunk(0, -1);
+    txValidator.runValidation(tx, ZERO_MWM);
+  }
+
+  @Test
+  public void validateCurrentTimestamp() throws Exception {
+    TransactionViewModel tx = getValidTxWithoutBranchAndTrunk(0, System.currentTimeMillis() / 1000);
+    txValidator.runValidation(tx, ZERO_MWM);
+  }
+
+  @Test(expected = TransactionValidator.StaleTimestampException.class)
+  public void validate3HrFutureTimestamp() throws Exception {
+    long threeHours = 60*60*3;
+    TransactionViewModel tx = getValidTxWithoutBranchAndTrunk(0, System.currentTimeMillis() / 1000 + threeHours);
+    txValidator.runValidation(tx, ZERO_MWM);
+  }
+
+  @Test
+  public void validateChangingEpochTimestamp() throws Exception {
+    long threeHours = 60*60*3;
+    TransactionViewModel tx = getValidTxWithoutBranchAndTrunk(0, threeHours);
+    TransactionValidator.setLatestEpochTimestamp(threeHours - 10);
+    txValidator.runValidation(tx, ZERO_MWM);
+    TransactionValidator.setLatestEpochTimestamp(0);
+  }
+
+  @Test(expected = TransactionValidator.StaleTimestampException.class)
+  public void failOnValidateChangingEpochTimestamp() throws Exception {
+    long threeHours = 60*60*3;
+    TransactionViewModel tx = getValidTxWithoutBranchAndTrunk(0, threeHours);
+    TransactionValidator.setLatestEpochTimestamp(threeHours + 10);
+    txValidator.runValidation(tx, ZERO_MWM);
+    TransactionValidator.setLatestEpochTimestamp(0);
+
+  }
+
+  @Test
+  public void testClear() throws Exception {
+    txValidator.addSolidTransaction(Hash.NULL_HASH);
+
+    assertFalse(txValidator.isNewSolidTxSetsEmpty());
+
+    txValidator.clearSolidTransactionsQueue();
+
+    assertTrue(txValidator.isNewSolidTxSetsEmpty());
+  }
+
   private TransactionViewModel getTxWithoutBranchAndTrunk() throws Exception {
     byte[] trits = getRandomTransactionTrits();
+    TransactionViewModel tx = new TransactionViewModel(trits, TransactionHash.calculate(SpongeFactory.Mode.CURLP81, trits));
+    tx.store(tangle);
+
+    return tx;
+  }
+
+  private TransactionViewModel getValidTxWithoutBranchAndTrunk(long value, long timestamp) throws Exception {
+    byte[] trits = getRandomTransactionTrits();
+    //value
+    byte[] valueT = new byte[TransactionViewModel.VALUE_TRINARY_SIZE];
+    byte[] timestampT = new byte[TransactionViewModel.TIMESTAMP_TRINARY_SIZE];
+    byte[] attachmentTimestampT = new byte[TransactionViewModel.ATTACHMENT_TIMESTAMP_TRINARY_SIZE];
+
+    Converter.copyTrits(value, valueT, 0, valueT.length);
+    Converter.copyTrits(timestamp, timestampT, 0, timestampT.length);
+    Converter.copyTrits(timestamp * 1000, attachmentTimestampT, 0, attachmentTimestampT.length);
+
+    System.arraycopy(valueT, 0, trits, TransactionViewModel.VALUE_TRINARY_OFFSET, valueT.length);
+    System.arraycopy(timestampT, 0, trits, TransactionViewModel.TIMESTAMP_TRINARY_OFFSET, timestampT.length);
+    System.arraycopy(attachmentTimestampT, 0, trits, TransactionViewModel.ATTACHMENT_TIMESTAMP_TRINARY_OFFSET, attachmentTimestampT.length);
+
     TransactionViewModel tx = new TransactionViewModel(trits, TransactionHash.calculate(SpongeFactory.Mode.CURLP81, trits));
 
     tx.store(tangle);

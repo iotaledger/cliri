@@ -10,6 +10,7 @@ import com.iota.iri.network.UDPReceiver;
 import com.iota.iri.network.replicator.Replicator;
 import com.iota.iri.service.TipsSolidifier;
 import com.iota.iri.service.stats.TransactionStatsPublisher;
+import com.iota.iri.service.DatabaseRecycler;
 import com.iota.iri.service.tipselection.*;
 import com.iota.iri.service.tipselection.impl.*;
 import com.iota.iri.storage.*;
@@ -19,6 +20,7 @@ import com.iota.iri.zmq.MessageQ;
 
 import java.security.SecureRandom;
 import java.util.List;
+import java.util.Date;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.slf4j.Logger;
@@ -71,6 +73,7 @@ public class Iota {
     public final TipsViewModel tipsViewModel;
     public final MessageQ messageQ;
     public final TipSelector tipsSelector;
+    public final DatabaseRecycler databaseRecycler;
 
     /**
      * Creates all services needed to run an IOTA node.
@@ -92,6 +95,7 @@ public class Iota {
         tipsSolidifier = new TipsSolidifier(tangle, transactionValidator, tipsViewModel);
         tipsSelector = createTipSelector(configuration);
         transactionStatsPublisher = new TransactionStatsPublisher(tangle, tipsViewModel, tipsSelector, messageQ);
+        databaseRecycler = new DatabaseRecycler(transactionValidator, transactionRequester, tipsViewModel, tangle);
     }
 
     /**
@@ -119,6 +123,7 @@ public class Iota {
         udpReceiver.init();
         replicator.init();
         node.init();
+        databaseRecycler.init(new Date(System.currentTimeMillis()));
     }
 
     private void rescanDb() throws Exception {
@@ -178,10 +183,11 @@ public class Iota {
     }
 
     private TipSelector createTipSelector(TipSelConfig config) {
-        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE);
         RatingCalculator ratingCalculator = new CumulativeWeightCalculator(tangle);
         TailFinder tailFinder = new TailFinderImpl(tangle);
         Walker walker = new WalkerAlpha(tailFinder, tangle, messageQ, new SecureRandom(), config);
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel,
+            CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE);
         ReferenceChecker referenceChecker = new ReferenceCheckerImpl(tangle);
         return new TipSelectorImpl(tangle, ledgerValidator, entryPointSelector, ratingCalculator, walker, referenceChecker);
     }

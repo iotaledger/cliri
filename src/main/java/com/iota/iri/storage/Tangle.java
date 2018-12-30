@@ -203,6 +203,12 @@ public class Tangle {
         }
     }
 
+    public void clearAll() throws Exception {
+        for(PersistenceProvider provider: persistenceProviders) {
+            provider.clearAll();
+        }
+    }
+
     /*
     public boolean merge(Persistable model, Indexable index) throws Exception {
         boolean exists = false;

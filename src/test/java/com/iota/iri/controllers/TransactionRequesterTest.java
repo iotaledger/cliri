@@ -84,4 +84,22 @@ public class TransactionRequesterTest {
         //check that limit wasn't breached
         assertEquals(capacity, txReq.numberOfTransactionsToRequest());
     }
+
+    @Test
+    public void queueIsEmptyAfterCallingClearQueue() throws Exception {
+        final int txCount = 60;
+        TransactionRequester txReq = new TransactionRequester(tangle, mq);
+
+        //fill tips list
+        for (int i = 0; i < txCount; i++) {
+            Hash hash = TransactionViewModelTest.getRandomTransactionHash();
+            txReq.requestTransaction(hash);
+        }
+
+        assertEquals(txCount, txReq.numberOfTransactionsToRequest());
+
+        txReq.clearQueue();
+
+        assertEquals(0, txReq.numberOfTransactionsToRequest());
+    }
 }

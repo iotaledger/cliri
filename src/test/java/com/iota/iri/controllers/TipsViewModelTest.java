@@ -117,4 +117,23 @@ public class TipsViewModelTest {
         assertEquals(capacity * 2, tipsVM.size());
     }
 
+    @Test
+    public void tipsEmtpyAfterClear() throws Exception {
+        TipsViewModel tipsVM = new TipsViewModel();
+
+        int size = 60;
+
+        //fill tips list
+        for (int i = 0; i < size; i++) {
+            Hash hash = TransactionViewModelTest.getRandomTransactionHash();
+            tipsVM.addTipHash(hash);
+        }
+
+        assertEquals(size, tipsVM.size());
+
+        tipsVM.clear();
+
+        assertEquals(0, tipsVM.size());
+    } 
+
 }

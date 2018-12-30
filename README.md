@@ -1,6 +1,8 @@
 [![Build Status](https://travis-ci.org/iotaledger/cliri.svg?branch=dev)](https://travis-ci.org/iotaledger/cliri)
 ![GitHub release](https://img.shields.io/github/release/iotaledger/cliri.svg)
 ![license](https://img.shields.io/github/license/iotaledger/cliri.svg)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/b9e3837e02ec450b8507031ba7041204)](https://www.codacy.com/app/iotaledger/cliri?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=iotaledger/cliri&amp;utm_campaign=Badge_Grade)
+[![Codacy Badge](https://api.codacy.com/project/badge/Coverage/b9e3837e02ec450b8507031ba7041204)](https://www.codacy.com/app/iotaledger/cliri?utm_source=github.com&utm_medium=referral&utm_content=iotaledger/cliri&utm_campaign=Badge_Coverage)
 
 # CLIRI
 This project is a fork of [IRI](https://github.com/iotaledger/iri), with all Coordinator dependencies removed. It is meant for research purposes, and absolutely **not** ready for use on mainnet.

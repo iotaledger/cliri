@@ -28,7 +28,7 @@ import java.util.*;
 public class CumulativeWeightCalculator implements RatingCalculator{
 
     private static final Logger log = LoggerFactory.getLogger(CumulativeWeightCalculator.class);
-    public static final int MAX_FUTURE_SET_SIZE = 5000;
+    public static final int MAX_FUTURE_SET_SIZE = 400;
 
     public final Tangle tangle;
 
@@ -45,7 +45,7 @@ public class CumulativeWeightCalculator implements RatingCalculator{
     }
 
     @Override
-    public Integer calculateSingle(Hash transaction) throws Exception {
+    public int calculateSingle(Hash transaction) throws Exception {
         LinkedHashSet<Hash> futureSet = sortTransactionsInTopologicalOrder(transaction);
         return futureSet.size();
     }

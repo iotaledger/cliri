@@ -331,10 +331,10 @@ public class CumulativeWeightCalculatorTest {
         transaction2.store(tangle);
         transaction3.store(tangle);
 
-        Assert.assertEquals(new Integer(4), cumulativeWeightCalculator.calculateSingle(transaction.getHash()));
-        Assert.assertEquals(new Integer(2), cumulativeWeightCalculator.calculateSingle(transaction1.getHash()));
-        Assert.assertEquals(new Integer(2), cumulativeWeightCalculator.calculateSingle(transaction2.getHash()));
-        Assert.assertEquals(new Integer(1), cumulativeWeightCalculator.calculateSingle(transaction3.getHash()));
+        Assert.assertEquals(4, cumulativeWeightCalculator.calculateSingle(transaction.getHash()));
+        Assert.assertEquals(2, cumulativeWeightCalculator.calculateSingle(transaction1.getHash()));
+        Assert.assertEquals(2, cumulativeWeightCalculator.calculateSingle(transaction2.getHash()));
+        Assert.assertEquals(1, cumulativeWeightCalculator.calculateSingle(transaction3.getHash()));
     }
 
     @Test
@@ -353,10 +353,10 @@ public class CumulativeWeightCalculatorTest {
         transaction2.store(tangle);
         transaction3.store(tangle);
 
-        Assert.assertEquals(new Integer(4), cumulativeWeightCalculator.calculateSingle(transaction.getHash()));
-        Assert.assertEquals(new Integer(3), cumulativeWeightCalculator.calculateSingle(transaction1.getHash()));
-        Assert.assertEquals(new Integer(2), cumulativeWeightCalculator.calculateSingle(transaction2.getHash()));
-        Assert.assertEquals(new Integer(1), cumulativeWeightCalculator.calculateSingle(transaction3.getHash()));
+        Assert.assertEquals(4, cumulativeWeightCalculator.calculateSingle(transaction.getHash()));
+        Assert.assertEquals(3, cumulativeWeightCalculator.calculateSingle(transaction1.getHash()));
+        Assert.assertEquals(2, cumulativeWeightCalculator.calculateSingle(transaction2.getHash()));
+        Assert.assertEquals(1, cumulativeWeightCalculator.calculateSingle(transaction3.getHash()));
     }
 
     private long ratingTime(int size) throws Exception {

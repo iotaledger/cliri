@@ -127,4 +127,8 @@ public class TransactionRequester {
         return hash;
     }
 
+    public void clearQueue() {
+        transactionsToRequest.clear();
+    }
+
 }
