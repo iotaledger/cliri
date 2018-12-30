@@ -25,9 +25,9 @@ import ch.qos.logback.core.util.Duration;
  * to cap hard disk usage until local snapshots are merged into CLIRI.
  */
 public class DatabaseRecycler {
-    public final long acceptableLatency = Duration.buildByMinutes(10).getMilliseconds();
+    private final long acceptableLatencyInMs = Duration.buildByMinutes(10).getMilliseconds();
 
-    private final Logger log = LoggerFactory.getLogger(TipsSolidifier.class);
+    private static final Logger log = LoggerFactory.getLogger(DatabaseRecycler.class);
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private final TransactionValidator transactionValidator;
@@ -48,24 +48,25 @@ public class DatabaseRecycler {
         final LocalDate nextSundayDate = now.toInstant().atZone(ZoneId.of("UTC")).toLocalDate().with(next(SUNDAY));
         final long nextSunday = Date.from(nextSundayDate.atStartOfDay(ZoneId.of("UTC")).toInstant()).getTime();
 
-        log.info(String.format("Time until next Sunday: %d", nextSunday - now.getTime()));
-        log.info(String.format("Time between consecutive runs: %d", oneWeekInMs));
+        log.info("Time until next Sunday: {}", nextSunday - now.getTime());
+        log.info("Time between consecutive runs: {}", oneWeekInMs);
 
         scheduler.scheduleAtFixedRate(recycle, nextSunday - now.getTime(), oneWeekInMs, TimeUnit.MILLISECONDS);
     }
 
     protected final Runnable recycle = new Runnable() {
         public void run() {
-            log.info(String.format("Recycling database at %s", new Date().toString()));
-            TransactionValidator.setLatestEpochTimestamp(System.currentTimeMillis() - acceptableLatency);
+            log.info("Recycling database at {}", new Date(System.currentTimeMillis()).toString());
+            final long latestEpochTimestampInSeconds = (System.currentTimeMillis() - acceptableLatencyInMs) / 1000;
+            TransactionValidator.setLatestEpochTimestamp(latestEpochTimestampInSeconds);
             transactionRequester.clearQueue();
             tipsViewModel.clear();
 
             try {
-                tangle.clear();
-                transactionValidator.clear();
+                transactionValidator.clearSolidTransactionsQueue();
+                tangle.clearAll();
             } catch (Exception e) {
-                log.error(e.toString(), e);
+                log.error("Failed while recycling database", e);
             }
         }
     };

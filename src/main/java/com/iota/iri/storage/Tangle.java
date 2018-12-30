@@ -203,7 +203,7 @@ public class Tangle {
         }
     }
 
-    public void clear() throws Exception {
+    public void clearAll() throws Exception {
         for(PersistenceProvider provider: persistenceProviders) {
             provider.clearAll();
         }

@@ -87,15 +87,16 @@ public class TransactionRequesterTest {
 
     @Test
     public void queueIsEmptyAfterCallingClearQueue() throws Exception {
+        final int txCount = 60;
         TransactionRequester txReq = new TransactionRequester(tangle, mq);
 
         //fill tips list
-        for (int i = 0; i < 60; i++) {
+        for (int i = 0; i < txCount; i++) {
             Hash hash = TransactionViewModelTest.getRandomTransactionHash();
             txReq.requestTransaction(hash);
         }
 
-        assertEquals(60, txReq.numberOfTransactionsToRequest());
+        assertEquals(txCount, txReq.numberOfTransactionsToRequest());
 
         txReq.clearQueue();
 

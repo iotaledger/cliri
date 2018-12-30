@@ -112,7 +112,7 @@ public class TransactionValidator {
         newSolidThread.join();
     }
 
-    public void clear() throws Exception {
+    public void clearSolidTransactionsQueue() throws Exception {
         newSolidTransactionsOne.clear();
         newSolidTransactionsTwo.clear();
     }

@@ -244,7 +244,7 @@ public class TransactionValidatorTest {
 
     assertFalse(txValidator.isNewSolidTxSetsEmpty());
 
-    txValidator.clear();
+    txValidator.clearSolidTransactionsQueue();
 
     assertTrue(txValidator.isNewSolidTxSetsEmpty());
   }

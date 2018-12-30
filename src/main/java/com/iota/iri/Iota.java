@@ -117,7 +117,7 @@ public class Iota {
         udpReceiver.init();
         replicator.init();
         node.init();
-        databaseRecycler.init(new Date());
+        databaseRecycler.init(new Date(System.currentTimeMillis()));
     }
 
     private void rescanDb() throws Exception {

@@ -391,6 +391,11 @@ public class RocksDBPersistenceProvider implements PersistenceProvider {
         for(ColumnFamilyHandle handle: classTreeMap.values()) {
             flushHandle(handle);
         }
+
+        log.info("Deleting all metadata entries");
+        for (ColumnFamilyHandle handle : metadataReference.values()) {
+            flushHandle(handle);
+        }
     }
 
     // 2018 March 28 - Unused Code
