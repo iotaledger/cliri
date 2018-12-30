@@ -3,6 +3,7 @@ package com.iota.iri;
 import com.iota.iri.controllers.TipsViewModel;
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.crypto.SpongeFactory;
+import com.iota.iri.model.Hash;
 import com.iota.iri.model.TransactionHash;
 import com.iota.iri.network.TransactionRequester;
 import com.iota.iri.storage.Tangle;
@@ -235,6 +236,17 @@ public class TransactionValidatorTest {
     txValidator.runValidation(tx, ZERO_MWM);
     TransactionValidator.setLatestEpochTimestamp(0);
 
+  }
+
+  @Test
+  public void testClear() throws Exception {
+    txValidator.addSolidTransaction(Hash.NULL_HASH);
+
+    assertFalse(txValidator.isNewSolidTxSetsEmpty());
+
+    txValidator.clearSolidTransactionsQueue();
+
+    assertTrue(txValidator.isNewSolidTxSetsEmpty());
   }
 
   private TransactionViewModel getTxWithoutBranchAndTrunk() throws Exception {

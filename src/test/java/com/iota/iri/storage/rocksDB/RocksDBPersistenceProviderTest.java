@@ -79,6 +79,25 @@ public class RocksDBPersistenceProviderTest {
         }
     }
 
+    @Test
+    public void testClearAll() throws Exception {
+        Persistable tx = new Transaction();
+        byte[] bytes = new byte[Transaction.SIZE];
+        Arrays.fill(bytes, (byte) 1);
+        tx.read(bytes);
+        tx.readMetadata(bytes);
+        List<Pair<Indexable, Persistable>> models = IntStream.range(1, 1000)
+                .mapToObj(i -> new Pair<>((Indexable) new IntegerIndex(i), tx))
+                .collect(Collectors.toList());
+
+        rocksDBPersistenceProvider.saveBatch(models);
+
+        Assert.assertArrayEquals(tx.bytes(), rocksDBPersistenceProvider.get(Transaction.class, new IntegerIndex(1)).bytes());
+
+        rocksDBPersistenceProvider.clearAll();
+
+        Assert.assertNull(rocksDBPersistenceProvider.get(Transaction.class, new IntegerIndex(1)).bytes());
+    }
 
 
 }

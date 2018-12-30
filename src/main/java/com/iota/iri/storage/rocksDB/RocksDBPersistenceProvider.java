@@ -385,6 +385,19 @@ public class RocksDBPersistenceProvider implements PersistenceProvider {
         return false;
     }
 
+    @Override
+    public void clearAll() throws Exception {
+        log.info("Deleting all entries");
+        for(ColumnFamilyHandle handle: classTreeMap.values()) {
+            flushHandle(handle);
+        }
+
+        log.info("Deleting all metadata entries");
+        for (ColumnFamilyHandle handle : metadataReference.values()) {
+            flushHandle(handle);
+        }
+    }
+
     // 2018 March 28 - Unused Code
     public void createBackup(String path) throws RocksDBException {
         try (Env env = Env.getDefault();
