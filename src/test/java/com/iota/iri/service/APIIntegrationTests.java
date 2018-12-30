@@ -8,6 +8,7 @@ import com.iota.iri.conf.IotaConfig;
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.crypto.SpongeFactory;
 import com.iota.iri.model.TransactionHash;
+import com.iota.iri.TransactionValidator;
 import com.iota.iri.utils.Converter;
 
 import java.util.HashMap;
@@ -91,6 +92,9 @@ public class APIIntegrationTests {
                 iota.init();
                 api.init();
                 ixi.init(IXIConfig.IXI_DIR);
+
+                // set epoch timestamp to not clash with hard-coded transaction test-cases.
+                TransactionValidator.setLatestEpochTimestamp(0);
             } catch (final Exception e) {
                 log.error("Exception during IOTA node initialisation: ", e);
                 fail("Exception during IOTA node initialisation");
