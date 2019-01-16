@@ -117,9 +117,8 @@ public class EntryPointSelectorCumulativeWeightThreshold implements EntryPointSe
             stepSize *= 2;
         }
 
-        // Return the last transaction that did not cross the treshold,
-        // unless we got to the genesis
-        return currentHash.equals(Hash.NULL_HASH) ? Hash.NULL_HASH : previousHash;
+        // Return the last transaction that did not cross the treshold
+        return previousHash;
     }
 
     private Hash nStepsBack(Hash from, int steps) throws Exception {
