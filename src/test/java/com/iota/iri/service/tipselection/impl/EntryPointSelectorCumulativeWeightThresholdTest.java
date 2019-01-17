@@ -53,15 +53,9 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
     }
 
     @Test
-    public void returnsGenesisInSingleTxTangle() throws Exception {
-        TransactionViewModel transaction = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(
-                Hash.NULL_HASH,
-                Hash.NULL_HASH),
-                getRandomTransactionHash());
-        transaction.store(tangle);
-
+    public void returnsGenesisForEmptyTangle() throws Exception {
         final int threshold = 50;
-        Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(transaction.getBundleHash());
+        Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(Hash.NULL_HASH);
         
         EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold);
         Hash entryPoint = entryPointSelector.getEntryPoint();
@@ -73,7 +67,7 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
     public void returnsCorrectTxInChain() throws Exception {
         final int threshold = 5;
         final int chainLength = 30;
-        final int expectedEntrypoint = chainLength - 7;
+        final int expectedEntrypoint = chainLength - 3;
         
         List<TransactionViewModel> transactions = new ArrayList<TransactionViewModel>();
 
@@ -103,7 +97,7 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
         final int threshold = 15;
         final int stalkLevels = 15;
         final int txPerLevel = 5;
-        final int expectedStalkLevel = stalkLevels - 4;
+        final int expectedStalkLevel = stalkLevels - 2;
         
         List<TransactionViewModel> mainStalk = new ArrayList<TransactionViewModel>();
 
@@ -161,27 +155,14 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
 
     @Test
     public void failWhenEntryPointSizeIsTooBig() throws Exception {
-        // The scenario is two chains attached to the genesis: very long and very short.
-        // The random tip function returns the short chain's tip.
+        // This isn't supposed to happen, we simulate it by having getRandomSolidTipHash
+        // return the genesis, rather than a tip.
         final int threshold = 10;
-        final int longChainLength = EntryPointSelectorCumulativeWeightThreshold.MAX_SUBTANGLE_SIZE + 50;
-        final int shortChainLength = 2;
-        Hash longChainTip = Hash.NULL_HASH;
-        Hash shortChainTip= Hash.NULL_HASH;
+        final int chainLength = EntryPointSelectorCumulativeWeightThreshold.MAX_SUBTANGLE_SIZE + 1;
 
-        for (int i = 0; i < longChainLength; i++) {
-            TransactionViewModel newTip = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(longChainTip, longChainTip), getRandomTransactionHash());
-            newTip.store(tangle);
-            longChainTip = newTip.getHash();
-        }
+        makeChain(chainLength);
 
-        for (int i = 0; i < shortChainLength; i++) {
-            TransactionViewModel newTip = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(shortChainTip, shortChainTip), getRandomTransactionHash());
-            newTip.store(tangle);
-            shortChainTip = newTip.getHash();
-        }
-
-        Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(shortChainTip);
+        Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(Hash.NULL_HASH);
         
         EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold);
 
@@ -191,16 +172,15 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
 
     @Test
     public void succeedWhenEntryPointSizeIsJustRight() throws Exception {
-        // Two chains
+        // We simulate the maximum subtangle size by having getRandomSolidTipHash
+        // return the genesis, rather than a tip.
         final int threshold = 10;
-        final int longChainLength = (int)(EntryPointSelectorCumulativeWeightThreshold.MAX_SUBTANGLE_SIZE / 2.5);
-        final int shortChainLength = 2;
+        final int chainLength = (int)(EntryPointSelectorCumulativeWeightThreshold.MAX_SUBTANGLE_SIZE - 1);
         
-        makeChain(longChainLength);
-        List<Hash> shortChain = makeChain(shortChainLength);
+        makeChain(chainLength);
 
         // Start from the short chain, so we start the BFS from the genesis
-        Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(shortChain.get(shortChain.size() - 1));
+        Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(Hash.NULL_HASH);
         
         EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold);
 
