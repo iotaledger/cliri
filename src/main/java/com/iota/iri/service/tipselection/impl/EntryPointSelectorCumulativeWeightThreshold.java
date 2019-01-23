@@ -105,20 +105,17 @@ public class EntryPointSelectorCumulativeWeightThreshold implements EntryPointSe
      */
     private Hash backtrack(Hash tip, int threshold) throws Exception {
         Hash currentHash = tip;
-        Hash previousHash = tip;
         int currentWeight = 1;
         int stepSize = 1;
 
         // Backtrack as long as the genesis hasn't been reached and the threshold has not been crossed
         while (currentWeight < threshold && !isGenesis(currentHash)) {
-            previousHash = currentHash;
             currentHash = nStepsBack(currentHash, stepSize);
             currentWeight = cumulativeWeightCalculator.calculateSingle(currentHash);
             stepSize *= 2;
         }
 
-        // Return the last transaction that did not cross the treshold
-        return previousHash;
+        return currentHash;
     }
 
     private Hash nStepsBack(Hash from, int steps) throws Exception {
