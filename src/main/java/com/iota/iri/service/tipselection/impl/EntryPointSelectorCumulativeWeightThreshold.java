@@ -40,7 +40,8 @@ public class EntryPointSelectorCumulativeWeightThreshold implements EntryPointSe
 
     @Override
     public Hash getEntryPoint() throws Exception {
-        Hash entryPoint = backtrack(getTip(), threshold);
+        Hash tip = tipsViewModel.getRandomSolidTipHash();
+        Hash entryPoint = backtrack(tip, threshold);
 
         int subtangleWeight = cumulativeWeightCalculator.calculateSingle(entryPoint);
         if (subtangleWeight > MAX_SUBTANGLE_SIZE) {
@@ -50,50 +51,6 @@ public class EntryPointSelectorCumulativeWeightThreshold implements EntryPointSe
         }
 
         return entryPoint;
-    }
-
-    private Hash getTip() throws Exception {
-        Hash solidTip = tipsViewModel.getRandomSolidTipHash();
-
-        if (solidTip == null) {
-            // If there are no known tips, start walking from the genesis
-            // and choose the heighest tip
-            solidTip = getHeighestTip();
-        }
-
-        return solidTip;
-    }
-
-    /**
-     * Perform BFS scan from the genesis to find all transactions'
-     * heights, defined to be the distance from the genesis.
-     * @return a map from transactions to heights, ordered in ascending height order
-     */
-    private Hash getHeighestTip() throws Exception {
-        HashSet<Hash> visited = new HashSet<>();
-  
-        // Create a queue for BFS
-        Queue<Hash> queue = new LinkedList<>(); 
-  
-        // Mark the genesis as visited with distance 0, and enqueue it 
-        visited.add(Hash.NULL_HASH);
-        queue.add(Hash.NULL_HASH); 
-  
-        Hash currentHash = Hash.NULL_HASH;
-        while (queue.size() != 0) 
-        { 
-            currentHash = queue.poll(); 
-  
-            // Get all approvers, add unvisited to queue and add them to the visited set
-            for (Hash approver : ApproveeViewModel.load(tangle, currentHash).getHashes()) {
-                if (!visited.contains(approver)) {
-                    visited.add(approver);
-                    queue.add(approver);
-                }
-            }
-        } 
-
-        return currentHash;
     }
 
     /**

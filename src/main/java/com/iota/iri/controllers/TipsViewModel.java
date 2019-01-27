@@ -1,12 +1,17 @@
 package com.iota.iri.controllers;
 
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
 import java.util.Set;
 
 import com.iota.iri.model.Hash;
+import com.iota.iri.storage.Tangle;
 
 public class TipsViewModel {
 
@@ -14,9 +19,14 @@ public class TipsViewModel {
 
     private final FifoHashCache<Hash> tips = new FifoHashCache<>(TipsViewModel.MAX_TIPS);
     private final FifoHashCache<Hash> solidTips = new FifoHashCache<>(TipsViewModel.MAX_TIPS);
+    private final Tangle tangle;
 
     private final SecureRandom seed = new SecureRandom();
     private final Object sync = new Object();
+
+    public TipsViewModel(Tangle tangle) {
+        this.tangle = tangle;
+    }
 
     public void addTipHash(Hash hash) {
         synchronized (sync) {
@@ -57,13 +67,25 @@ public class TipsViewModel {
         return hashes;
     }
 
-    public Hash getRandomSolidTipHash() {
+    public List<Hash> getLatestSolidTips(int count) {
+        List<Hash> result = new ArrayList<>();
+        
+        int i = 0;
+        Iterator<Hash> hashIterator = solidTips.iterator();
+        while (hashIterator.hasNext() && i < count) {
+            result.add(hashIterator.next());
+            i++;
+        }
+
+        return result;
+    }
+
+    public Hash getRandomSolidTipHash() throws Exception {
         synchronized (sync) {
-            int size = solidTips.size();
-            if (size == 0) {
-                return null;
+            if (solidTips.size() == 0) {
+                populateSolidTips();
             }
-            int index = seed.nextInt(size);
+            int index = seed.nextInt(solidTips.size());
             Iterator<Hash> hashIterator;
             hashIterator = solidTips.iterator();
             Hash hash = null;
@@ -118,7 +140,41 @@ public class TipsViewModel {
         }
     }
 
-    private class FifoHashCache<K> {
+    private void populateSolidTips() throws Exception {
+        HashSet<Hash> visited = new HashSet<>();
+  
+        // Create a queue for BFS
+        Queue<Hash> queue = new LinkedList<>(); 
+  
+        // Mark the genesis as visited and enqueue it 
+        visited.add(Hash.NULL_HASH);
+        queue.add(Hash.NULL_HASH); 
+  
+        Hash currentHash = Hash.NULL_HASH;
+        while (queue.size() != 0) 
+        { 
+            currentHash = queue.poll(); 
+  
+            // Get all approvers, add unvisited to queue and add them to the visited set
+            Set<Hash> approvers = ApproveeViewModel.load(tangle, currentHash).getHashes();
+
+            // If tip, add to solidTips (populate)
+            if (approvers.isEmpty()) {
+                this.addTipHash(currentHash);
+                this.setSolid(currentHash);
+            }
+            
+            // Add solid approvers to queue
+            for (Hash approver : approvers) {
+                if (!visited.contains(approver) && TransactionViewModel.fromHash(tangle, approver).isSolid()) {
+                    visited.add(approver);
+                    queue.add(approver);
+                }
+            }
+        } 
+    }
+
+    private class FifoHashCache<K> implements Iterable<K> {
 
         private final int capacity;
         private final LinkedHashSet<K> set;
