@@ -135,31 +135,6 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
     }
 
     @Test
-    public void chooseHeighestTipWhenSolidTipIsGone() throws Exception {
-        // Three chains, expect to end up on the longest
-        final int threshold = 50;
-        
-        // Two chains
-        final int shortChainLength = CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE * 3;
-        final int mediumChainLength = CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE * 4;
-        final int longChainLength = CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE * 5;
-
-        List<Hash> shortChain = makeChain(shortChainLength);
-        List<Hash> mediumChain = makeChain(mediumChainLength);
-        List<Hash> longChain = makeChain(longChainLength);
-
-        Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(null);
-
-        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold);
-
-        Hash entryPoint = entryPointSelector.getEntryPoint();
-
-        Assert.assertTrue(longChain.contains(entryPoint));
-        Assert.assertFalse(mediumChain.contains(entryPoint));
-        Assert.assertFalse(shortChain.contains(entryPoint));
-    }
-
-    @Test
     public void failWhenEntryPointSizeIsTooBig() throws Exception {
         // The scenario is two chains attached to the genesis: very long and very short.
         // The random tip function returns the short chain's tip.

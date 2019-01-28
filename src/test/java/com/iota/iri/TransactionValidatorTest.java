@@ -38,7 +38,7 @@ public class TransactionValidatorTest {
         new RocksDBPersistenceProvider(
             dbFolder.getRoot().getAbsolutePath(), logFolder.getRoot().getAbsolutePath(),1000));
     tangle.init();
-    TipsViewModel tipsViewModel = new TipsViewModel();
+    TipsViewModel tipsViewModel = new TipsViewModel(tangle);
     MessageQ messageQ = Mockito.mock(MessageQ.class);
     TransactionRequester txRequester = new TransactionRequester(tangle, messageQ);
     txValidator = new TransactionValidator(tangle, tipsViewModel, txRequester);

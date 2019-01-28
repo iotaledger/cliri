@@ -84,7 +84,7 @@ public class Iota {
         this.configuration = configuration;
         tangle = new Tangle();
         messageQ = MessageQ.createWith(configuration);
-        tipsViewModel = new TipsViewModel();
+        tipsViewModel = new TipsViewModel(tangle);
         transactionRequester = new TransactionRequester(tangle, messageQ);
         transactionValidator = new TransactionValidator(tangle, tipsViewModel, transactionRequester);
         node = new Node(tangle, transactionValidator, transactionRequester, tipsViewModel, messageQ,
