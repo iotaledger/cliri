@@ -44,8 +44,6 @@ public class ConnectedComponentsCalculatorTest {
         tangle.init();
     }
 
-    
-
     @Test
     public void returnsGenesisInSingleTxTangle() throws Exception {
         TransactionViewModel transaction = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(
@@ -109,7 +107,7 @@ public class ConnectedComponentsCalculatorTest {
     public void mostRecentTipsChosenFromStarAroundGenesisAndChain() throws Exception {
         long incr = 1000;
 
-        final int starAmount = maxTransaction  / 10;
+        final int starAmount = maxTransaction / 10;
         //star
         List<Hash> starTransactions = makeStar(starAmount, Hash.NULL_HASH, incr);
 
@@ -126,8 +124,6 @@ public class ConnectedComponentsCalculatorTest {
         Assert.assertTrue(recentTransactions.containsAll(chainTransactions)); // main chain is present
         Assert.assertTrue(recentTransactions.contains(starTransactions.get(starAmount - 1))); // only the newest star tip appears
         Assert.assertFalse(recentTransactions.contains(starTransactions.get(starAmount - 2))); // only the newest star tip appears
-
-
         Assert.assertFalse(recentTransactions.contains(Hash.NULL_HASH));
     }
 

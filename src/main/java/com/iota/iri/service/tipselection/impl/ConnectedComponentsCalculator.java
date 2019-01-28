@@ -9,25 +9,25 @@ import java.util.*;
 public class ConnectedComponentsCalculator {
     public final Tangle tangle;
 
-    private final int maxTransaction;
+    private final int maxTransactions;
 
-    public ConnectedComponentsCalculator(Tangle tangle, int maxTransaction) {
-        this.maxTransaction = maxTransaction;
+    public ConnectedComponentsCalculator(Tangle tangle, int maxTransactions) {
+        this.maxTransactions = maxTransactions;
         this.tangle = tangle;
     }
 
     public Collection<Hash> findNMostRecentTransactions(Collection<Hash> tips) throws Exception {
 
-        Collection<Hash> result = new HashSet<>(maxTransaction);
+        Collection<Hash> result = new HashSet<>(maxTransactions);
 
         //using a max heap sorted by arrivalTime.
-        Queue<TransactionViewModel> queue = new PriorityQueue<>(maxTransaction,
-                Comparator.comparingLong(a -> -1 * a.getArrivalTime()));
+        Queue<TransactionViewModel> queue = new PriorityQueue<>(maxTransactions,
+                Comparator.comparingLong(a -> (-1) * a.getArrivalTime()));
 
         //the heap is initialized with the tips.
         tips.stream().map(this::fromHash).forEach(queue::add);
 
-        while (!queue.isEmpty() && result.size() < maxTransaction) {
+        while (!queue.isEmpty() && result.size() < maxTransactions) {
             TransactionViewModel current = queue.poll();
             result.add(current.getHash());
 
