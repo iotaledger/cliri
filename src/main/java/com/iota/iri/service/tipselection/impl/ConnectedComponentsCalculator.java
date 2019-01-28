@@ -9,34 +9,36 @@ import java.util.*;
 public class ConnectedComponentsCalculator {
     public final Tangle tangle;
 
-    public static final int N = 5000;
+    private final int maxTransaction;
 
-    public ConnectedComponentsCalculator(Tangle tangle) {
+    public ConnectedComponentsCalculator(Tangle tangle, int maxTransaction) {
+        this.maxTransaction = maxTransaction;
         this.tangle = tangle;
     }
 
-    //find N most recent transactions
     public Collection<Hash> findNMostRecentTransactions(Collection<Hash> tips) throws Exception {
 
-        Collection<Hash> result = new HashSet<>(N);
+        Collection<Hash> result = new HashSet<>(maxTransaction);
 
         //using a max heap sorted by arrivalTime.
-        Queue<TransactionViewModel> queue = new PriorityQueue<>(N,
+        Queue<TransactionViewModel> queue = new PriorityQueue<>(maxTransaction,
                 Comparator.comparingLong(a -> -1 * a.getArrivalTime()));
 
         //the heap is initialized with the tips.
         tips.stream().map(this::fromHash).forEach(queue::add);
 
-        while (!queue.isEmpty() && result.size() < N) {
+        while (!queue.isEmpty() && result.size() < maxTransaction) {
             TransactionViewModel current = queue.poll();
             result.add(current.getHash());
 
             //add children to priority queue, only if not already chosen.
-            if (!result.contains(current.getTrunkTransactionHash())) {
+            Hash trunkHash = current.getTrunkTransactionHash();
+            Hash branchHash = current.getBranchTransactionHash();
+
+            if (!result.contains(trunkHash)) {
                 queue.add(current.getTrunkTransaction(tangle));
             }
-            if (!result.contains(current.getBranchTransactionHash())
-            && !current.getTrunkTransactionHash().equals(current.getBranchTransactionHash())) {
+            if (!trunkHash.equals(branchHash) && !result.contains(branchHash)) {
                 queue.add(current.getBranchTransaction(tangle));
             }
         }
@@ -44,16 +46,11 @@ public class ConnectedComponentsCalculator {
         return result;
     }
 
-    //find connected components in `N` (step 2)
-
-    //randomly select a tip from the largest CC (step 3)
-
     private TransactionViewModel fromHash(Hash hash) {
         try {
             return TransactionViewModel.fromHash(tangle, hash);
         } catch (Exception e) {
-            //do nothing
+            throw new RuntimeException("failed to load transaction");
         }
-        return null;
     }
 }
