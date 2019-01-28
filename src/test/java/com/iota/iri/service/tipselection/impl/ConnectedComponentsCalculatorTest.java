@@ -127,6 +127,76 @@ public class ConnectedComponentsCalculatorTest {
         Assert.assertFalse(recentTransactions.contains(Hash.NULL_HASH));
     }
 
+    @Test
+    public void selectTipOneConnectedComponentWithOneTip() throws Exception {
+        TransactionViewModel transaction = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(
+                Hash.NULL_HASH,
+                Hash.NULL_HASH),
+                getRandomTransactionHash());
+        transaction.store(tangle);
+
+        ConnectedComponentsCalculator connectedComponentsCalculator = new ConnectedComponentsCalculator(tangle, maxTransaction);
+        Collection<Collection<Hash>> CC = new ArrayList<>(Collections.singleton(Collections.singleton(transaction.getHash())));
+
+        Hash tip = connectedComponentsCalculator.randomlySelectTipFromLargestConnectedComponent(CC, Collections.singleton(transaction.getHash()));
+        Assert.assertEquals(transaction.getHash(), tip);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void failOnEmptyConnectedComponentIntersection() throws Exception {
+        TransactionViewModel transaction = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(
+                Hash.NULL_HASH,
+                Hash.NULL_HASH),
+                getRandomTransactionHash());
+        transaction.store(tangle);
+
+        TransactionViewModel falseTip = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(
+                Hash.NULL_HASH,
+                Hash.NULL_HASH),
+                getRandomTransactionHash());
+        falseTip.store(tangle);
+
+        ConnectedComponentsCalculator connectedComponentsCalculator = new ConnectedComponentsCalculator(tangle, maxTransaction);
+        Collection<Collection<Hash>> CC = new ArrayList<>(Collections.singleton(Collections.singleton(transaction.getHash())));
+
+        //should throw IllegalStateException
+        Hash tip = connectedComponentsCalculator.randomlySelectTipFromLargestConnectedComponent(CC,
+                Collections.singleton(falseTip.getHash()));
+    }
+
+    @Test
+    public void selectTipFromLargestConnectedComponentWithOneTip() throws Exception {
+        int amount = 10;
+        List<Hash> chainTransactions = makeChain(amount, Hash.NULL_HASH, 0);
+        List<Hash> loneTransactions = makeStar(amount, Hash.NULL_HASH, 0);
+
+        ConnectedComponentsCalculator connectedComponentsCalculator = new ConnectedComponentsCalculator(tangle, maxTransaction);
+        Collection<Collection<Hash>> CC = new ArrayList<>(Collections.singleton(chainTransactions));
+        loneTransactions.forEach(o -> CC.add(Collections.singleton(o)));
+
+        Hash chainTip = chainTransactions.get(amount - 1);
+        Hash tip = connectedComponentsCalculator.randomlySelectTipFromLargestConnectedComponent(CC, Collections.singleton(chainTip));
+        Assert.assertEquals(chainTip, tip);
+    }
+
+    @Test
+    public void selectTipFromLargestConnectedComponentWithMultipleTips() throws Exception {
+        int amount = 10;
+        List<Hash> chainTransactions = makeChain(amount, Hash.NULL_HASH, 0);
+        List<Hash> loneTransactions = makeStar(amount, Hash.NULL_HASH, 0);
+
+        Hash chainTip = chainTransactions.get(amount - 1);
+        List<Hash> hairOnChainTransactions = makeStar(amount, chainTip, 0);
+        chainTransactions.addAll(hairOnChainTransactions);
+
+        ConnectedComponentsCalculator connectedComponentsCalculator = new ConnectedComponentsCalculator(tangle, maxTransaction);
+        Collection<Collection<Hash>> CC = new ArrayList<>(Collections.singleton(chainTransactions));
+        loneTransactions.forEach(o -> CC.add(Collections.singleton(o)));
+
+        Hash tip = connectedComponentsCalculator.randomlySelectTipFromLargestConnectedComponent(CC, hairOnChainTransactions);
+        Assert.assertTrue(hairOnChainTransactions.contains(tip));
+    }
+
     private List<Hash> makeChain(int length, Hash tip, long startArrivalTime) throws Exception {
         List<Hash> chain = new ArrayList<>();
 
