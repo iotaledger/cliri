@@ -4,16 +4,20 @@ import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.Hash;
 import com.iota.iri.storage.Tangle;
 
+import java.security.SecureRandom;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ConnectedComponentsCalculator {
     public final Tangle tangle;
 
     private final int maxTransactions;
+    private final Random random;
 
     public ConnectedComponentsCalculator(Tangle tangle, int maxTransactions) {
         this.maxTransactions = maxTransactions;
         this.tangle = tangle;
+        this.random = new SecureRandom();
     }
 
     public Collection<Hash> findNMostRecentTransactions(Collection<Hash> tips) throws Exception {
@@ -46,7 +50,24 @@ public class ConnectedComponentsCalculator {
         return result;
     }
 
-    private TransactionViewModel fromHash(Hash hash) {
+    public Hash randomlySelectTipFromLargestConnectedComponent(Collection<Set<Hash>> connectedComponents,
+                                                               Collection<Hash> tips) {
+        Collection<Hash> largestComponent = connectedComponents.stream()
+                .max(Comparator.comparing(Collection::size))
+                .orElse(Collections.emptySet());
+
+        List<Hash> tipsInLargestComponent = tips.stream()
+                .filter(largestComponent::contains)
+                .collect(Collectors.toList());
+
+        if (tipsInLargestComponent.isEmpty()) {
+            throw new IllegalStateException("no tips found in largest connected component.");
+        }
+
+        return tipsInLargestComponent.get(random.nextInt(tipsInLargestComponent.size()));
+    }
+
+        private TransactionViewModel fromHash(Hash hash) {
         try {
             return TransactionViewModel.fromHash(tangle, hash);
         } catch (Exception e) {
