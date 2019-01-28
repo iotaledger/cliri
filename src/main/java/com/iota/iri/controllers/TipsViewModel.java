@@ -71,7 +71,7 @@ public class TipsViewModel {
         List<Hash> result = new ArrayList<>();
         
         int i = 0;
-        Iterator<Hash> hashIterator = solidTips.iterator();
+        Iterator<Hash> hashIterator = solidTips.descendingIterator();
         while (hashIterator.hasNext() && i < count) {
             result.add(hashIterator.next());
             i++;
@@ -151,21 +151,27 @@ public class TipsViewModel {
         queue.add(Hash.NULL_HASH); 
   
         Hash currentHash = Hash.NULL_HASH;
-        while (queue.size() != 0) 
-        { 
+        while (!queue.isEmpty()) { 
             currentHash = queue.poll(); 
   
             // Get all approvers, add unvisited to queue and add them to the visited set
             Set<Hash> approvers = ApproveeViewModel.load(tangle, currentHash).getHashes();
 
+            Set<Hash> solidApprovers = new HashSet<>();
+            for (Hash approver : approvers) {
+                if (TransactionViewModel.fromHash(tangle, approver).isSolid()) {
+                    solidApprovers.add(approver);
+                }
+            }
+
             // If tip, add to solidTips (populate)
-            if (approvers.isEmpty()) {
+            if (solidApprovers.isEmpty()) {
                 this.addTipHash(currentHash);
                 this.setSolid(currentHash);
             }
             
             // Add solid approvers to queue
-            for (Hash approver : approvers) {
+            for (Hash approver : solidApprovers) {
                 if (!visited.contains(approver) && TransactionViewModel.fromHash(tangle, approver).isSolid()) {
                     visited.add(approver);
                     queue.add(approver);
@@ -206,6 +212,11 @@ public class TipsViewModel {
 
         public Iterator<K> iterator() {
             return this.set.iterator();
+        }
+
+        public Iterator<K> descendingIterator() {
+            LinkedList<K> list = new LinkedList<>(this.set);
+            return list.descendingIterator();
         }
 
         public void clear() {

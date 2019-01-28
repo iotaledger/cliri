@@ -6,6 +6,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -199,9 +200,32 @@ public class TipsViewModelTest {
     }
 
     @Test
+    public void getRandomSolidTipReturnsGenesisWhenThereAreNoSolidTips() throws Exception {
+        final int totalUnsolid = 50;
+
+        TipsViewModel tipsVM = new TipsViewModel(tangle);
+
+        for (int i = 0; i < totalUnsolid; i++) {
+            TransactionViewModel newTip = new TransactionViewModel(
+                getRandomTransactionWithTrunkAndBranch(Hash.NULL_HASH, Hash.NULL_HASH), getRandomTransactionHash());
+            
+            // Adding non-solid tip
+            newTip.updateSolid(false);
+            newTip.store(tangle);
+            tipsVM.addTipHash(newTip.getHash());
+        }
+
+        Hash tip = tipsVM.getRandomSolidTipHash();
+
+        assertNotNull(tip);
+        assertEquals(Hash.NULL_HASH, tip);
+    }
+
+    @Test
     public void getLatestSolidTipsHappyFlow() throws Exception {
         final int total = 50;
         final int count = 10;
+        List<Hash> originalTips = new ArrayList<>();
 
         TipsViewModel tipsVM = new TipsViewModel(tangle);
 
@@ -209,15 +233,63 @@ public class TipsViewModelTest {
             TransactionViewModel newTip = new TransactionViewModel(
                 getRandomTransactionWithTrunkAndBranch(Hash.NULL_HASH, Hash.NULL_HASH), getRandomTransactionHash());
             
+            originalTips.add(newTip.getHash());
+
+            newTip.store(tangle);
             tipsVM.addTipHash(newTip.getHash());
             tipsVM.setSolid(newTip.getHash());
         }
 
+        List<Hash> expectedTips = originalTips.subList(originalTips.size() - count, originalTips.size());
 
         List<Hash> tips = tipsVM.getLatestSolidTips(count);
 
         assertNotNull(tips);
         assertEquals(count, tips.size());
+
+        for (Hash tip : tips) {
+            assertTrue(expectedTips.contains(tip));
+        }
+    }
+
+    @Test
+    public void getLatestSolidTipsIgnoresNonSolidTips() throws Exception {
+        final int total = 50;
+        final int count = 10;
+        List<Hash> solidTips = new ArrayList<>();
+        List<Hash> nonSolidTips = new ArrayList<>();
+
+        TipsViewModel tipsVM = new TipsViewModel(tangle);
+
+        for (int i = 0; i < total; i++) {
+            TransactionViewModel newTip = new TransactionViewModel(
+                getRandomTransactionWithTrunkAndBranch(Hash.NULL_HASH, Hash.NULL_HASH), getRandomTransactionHash());
+            
+            solidTips.add(newTip.getHash());
+
+            newTip.store(tangle);
+            tipsVM.addTipHash(newTip.getHash());
+            tipsVM.setSolid(newTip.getHash());
+        }
+
+        for (int i = 0; i < total; i++) {
+            TransactionViewModel newTip = new TransactionViewModel(
+                getRandomTransactionWithTrunkAndBranch(Hash.NULL_HASH, Hash.NULL_HASH), getRandomTransactionHash());
+            
+            nonSolidTips.add(newTip.getHash());
+
+            newTip.store(tangle);
+            tipsVM.addTipHash(newTip.getHash());
+        }
+
+        List<Hash> tips = tipsVM.getLatestSolidTips(count);
+
+        assertNotNull(tips);
+        assertEquals(count, tips.size());
+
+        for (Hash tip : tips) {
+            assertTrue(solidTips.contains(tip));
+        }
     }
 
 }
