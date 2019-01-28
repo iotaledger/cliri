@@ -50,11 +50,11 @@ public class ConnectedComponentsCalculator {
         return result;
     }
 
-    public Hash randomlySelectTipFromLargestConnectedComponent(Collection<Collection<Hash>> connectedComponents,
+    public Hash randomlySelectTipFromLargestConnectedComponent(Collection<Set<Hash>> connectedComponents,
                                                                Collection<Hash> tips) {
         Collection<Hash> largestComponent = connectedComponents.stream()
                 .max(Comparator.comparing(Collection::size))
-                .orElse(Collections.emptyList());
+                .orElse(Collections.emptySet());
 
         List<Hash> tipsInLargestComponent = tips.stream()
                 .filter(largestComponent::contains)
@@ -62,9 +62,9 @@ public class ConnectedComponentsCalculator {
 
         if (tipsInLargestComponent.isEmpty()) {
             throw new IllegalStateException("no tips found in largest connected component.");
-        } else {
-            return tipsInLargestComponent.get(random.nextInt(tipsInLargestComponent.size()));
         }
+
+        return tipsInLargestComponent.get(random.nextInt(tipsInLargestComponent.size()));
     }
 
         private TransactionViewModel fromHash(Hash hash) {

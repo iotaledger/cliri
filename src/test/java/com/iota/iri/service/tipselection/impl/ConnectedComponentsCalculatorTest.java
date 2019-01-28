@@ -10,10 +10,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static com.iota.iri.controllers.TransactionViewModelTest.getRandomTransactionHash;
 import static com.iota.iri.controllers.TransactionViewModelTest.getRandomTransactionWithTrunkAndBranch;
@@ -136,7 +133,7 @@ public class ConnectedComponentsCalculatorTest {
         transaction.store(tangle);
 
         ConnectedComponentsCalculator connectedComponentsCalculator = new ConnectedComponentsCalculator(tangle, maxTransaction);
-        Collection<Collection<Hash>> CC = new ArrayList<>(Collections.singleton(Collections.singleton(transaction.getHash())));
+        Collection<Set<Hash>> CC = new ArrayList<>(Collections.singleton(Collections.singleton(transaction.getHash())));
 
         Hash tip = connectedComponentsCalculator.randomlySelectTipFromLargestConnectedComponent(CC, Collections.singleton(transaction.getHash()));
         Assert.assertEquals(transaction.getHash(), tip);
@@ -157,7 +154,7 @@ public class ConnectedComponentsCalculatorTest {
         falseTip.store(tangle);
 
         ConnectedComponentsCalculator connectedComponentsCalculator = new ConnectedComponentsCalculator(tangle, maxTransaction);
-        Collection<Collection<Hash>> CC = new ArrayList<>(Collections.singleton(Collections.singleton(transaction.getHash())));
+        Collection<Set<Hash>> CC = new ArrayList<>(Collections.singleton(Collections.singleton(transaction.getHash())));
 
         //should throw IllegalStateException
         Hash tip = connectedComponentsCalculator.randomlySelectTipFromLargestConnectedComponent(CC,
@@ -171,7 +168,7 @@ public class ConnectedComponentsCalculatorTest {
         List<Hash> loneTransactions = makeStar(amount, Hash.NULL_HASH, 0);
 
         ConnectedComponentsCalculator connectedComponentsCalculator = new ConnectedComponentsCalculator(tangle, maxTransaction);
-        Collection<Collection<Hash>> CC = new ArrayList<>(Collections.singleton(chainTransactions));
+        Collection<Set<Hash>> CC = new ArrayList<>(Collections.singleton(new HashSet<>(chainTransactions)));
         loneTransactions.forEach(o -> CC.add(Collections.singleton(o)));
 
         Hash chainTip = chainTransactions.get(amount - 1);
@@ -190,7 +187,7 @@ public class ConnectedComponentsCalculatorTest {
         chainTransactions.addAll(hairOnChainTransactions);
 
         ConnectedComponentsCalculator connectedComponentsCalculator = new ConnectedComponentsCalculator(tangle, maxTransaction);
-        Collection<Collection<Hash>> CC = new ArrayList<>(Collections.singleton(chainTransactions));
+        Collection<Set<Hash>> CC = new ArrayList<>(Collections.singleton(new HashSet<>(chainTransactions)));
         loneTransactions.forEach(o -> CC.add(Collections.singleton(o)));
 
         Hash tip = connectedComponentsCalculator.randomlySelectTipFromLargestConnectedComponent(CC, hairOnChainTransactions);
