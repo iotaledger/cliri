@@ -1,5 +1,6 @@
 package com.iota.iri.service.tipselection.impl;
 
+import com.iota.iri.controllers.ApproveeViewModel;
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.Hash;
 import com.iota.iri.storage.Tangle;
@@ -18,6 +19,53 @@ public class ConnectedComponentsCalculator {
         this.maxTransactions = maxTransactions;
         this.tangle = tangle;
         this.random = new SecureRandom();
+    }
+
+    public Collection<Set<Hash>> getConnectedComponents(Set<Hash> transactions) throws Exception {
+        Set<Hash> unvisited = new HashSet<>(transactions);
+        List<Set<Hash>> result = new ArrayList<>();
+
+        // Outer loop iterates once for each component
+        while (!unvisited.isEmpty()) {
+            Set<Hash> currentComponent = new HashSet<>();
+
+            // Perform DFS scan to find all elements in this component
+            Deque<Hash> stack = new ArrayDeque<>();
+            Hash currentHash = unvisited.iterator().next();
+            stack.push(currentHash);
+            while (!stack.isEmpty()) {
+                currentHash = stack.pop();
+
+                if (!currentComponent.contains(currentHash)) {
+                    unvisited.remove(currentHash);
+                    currentComponent.add(currentHash);
+
+                    Collection<Hash> neighbors = getNeighbors(currentHash);
+                    Collection<Hash> unvisitedNeighbors = neighbors.stream()
+                        .filter(t -> unvisited.contains(t))
+                        .collect(Collectors.toSet());
+
+                    for (Hash neighbor : unvisitedNeighbors) {
+                        stack.push(neighbor);
+                    }
+                }
+            }
+
+            result.add(currentComponent);
+        }
+
+        return result;
+    }
+
+    private Collection<Hash> getNeighbors(Hash hash) throws Exception {
+        Collection<Hash> result = new HashSet<>();
+
+        TransactionViewModel transaction = TransactionViewModel.fromHash(tangle, hash);
+        result.addAll(ApproveeViewModel.load(tangle, hash).getHashes());
+        result.add(transaction.getBranchTransactionHash());
+        result.add(transaction.getTrunkTransactionHash());
+
+        return result;
     }
 
     public Collection<Hash> findNMostRecentTransactions(Collection<Hash> tips) throws Exception {
@@ -67,7 +115,7 @@ public class ConnectedComponentsCalculator {
         return tipsInLargestComponent.get(random.nextInt(tipsInLargestComponent.size()));
     }
 
-        private TransactionViewModel fromHash(Hash hash) {
+    private TransactionViewModel fromHash(Hash hash) {
         try {
             return TransactionViewModel.fromHash(tangle, hash);
         } catch (Exception e) {
