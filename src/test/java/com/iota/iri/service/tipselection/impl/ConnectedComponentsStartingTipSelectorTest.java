@@ -1,25 +1,34 @@
 package com.iota.iri.service.tipselection.impl;
 
+import static com.iota.iri.controllers.TransactionViewModelTest.getRandomTransactionHash;
+import static com.iota.iri.controllers.TransactionViewModelTest.getRandomTransactionWithTrunkAndBranch;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import com.iota.iri.controllers.TipsViewModel;
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.Hash;
 import com.iota.iri.storage.Tangle;
 import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mockito.Mockito;
 
-import java.util.*;
-
-import static com.iota.iri.controllers.TransactionViewModelTest.getRandomTransactionHash;
-import static com.iota.iri.controllers.TransactionViewModelTest.getRandomTransactionWithTrunkAndBranch;
-
-public class ConnectedComponentsCalculatorTest {
+public class ConnectedComponentsStartingTipSelectorTest {
 
     private TemporaryFolder dbFolder;
     private TemporaryFolder logFolder;
     private Tangle tangle;
+    private TipsViewModel tipsViewModel;
 
     private int maxTransaction = 100;
 
@@ -39,6 +48,8 @@ public class ConnectedComponentsCalculatorTest {
         tangle.addPersistenceProvider(new RocksDBPersistenceProvider(dbFolder.getRoot().getAbsolutePath(),
                 logFolder.getRoot().getAbsolutePath(), 1000));
         tangle.init();
+
+        tipsViewModel = Mockito.mock(TipsViewModel.class);
     }
 
     @Test
@@ -49,7 +60,7 @@ public class ConnectedComponentsCalculatorTest {
                 getRandomTransactionHash());
         transaction.store(tangle);
 
-        ConnectedComponentsCalculator connectedComponentsCalculator = new ConnectedComponentsCalculator(tangle, maxTransaction);
+        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = new ConnectedComponentsStartingTipSelector(tangle, maxTransaction, tipsViewModel);
         Collection<Hash> recentTransactions = connectedComponentsCalculator.findNMostRecentTransactions(
                 Collections.singleton(transaction.getHash()));
 
@@ -62,7 +73,7 @@ public class ConnectedComponentsCalculatorTest {
         int chainLength = maxTransaction - 10;
         List<Hash> transactions = makeChain(chainLength, Hash.NULL_HASH, 1000);
 
-        ConnectedComponentsCalculator connectedComponentsCalculator = new ConnectedComponentsCalculator(tangle, maxTransaction);
+        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = new ConnectedComponentsStartingTipSelector(tangle, maxTransaction, tipsViewModel);
         Collection<Hash> recentTransactions = connectedComponentsCalculator.findNMostRecentTransactions(
                 Collections.singleton(transactions.get(transactions.size() - 1)));
         Assert.assertTrue(recentTransactions.contains(Hash.NULL_HASH));
@@ -73,7 +84,7 @@ public class ConnectedComponentsCalculatorTest {
     public void doesntReturnsGenesisTxInChain() throws Exception {
         List<Hash> transactions = makeChain(maxTransaction + 1, Hash.NULL_HASH, 1000);
 
-        ConnectedComponentsCalculator connectedComponentsCalculator = new ConnectedComponentsCalculator(tangle, maxTransaction);
+        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = new ConnectedComponentsStartingTipSelector(tangle, maxTransaction, tipsViewModel);
         Collection<Hash> recentTransactions = connectedComponentsCalculator.findNMostRecentTransactions(
                 Collections.singleton(transactions.get(transactions.size() - 1)));
         Assert.assertFalse(recentTransactions.contains(Hash.NULL_HASH));
@@ -83,7 +94,7 @@ public class ConnectedComponentsCalculatorTest {
     public void allTipsAndGenesisReturnedForStarAroundGenesis() throws Exception {
         List<Hash> transactions = makeStar(maxTransaction - 1, Hash.NULL_HASH, 1000);
 
-        ConnectedComponentsCalculator connectedComponentsCalculator = new ConnectedComponentsCalculator(tangle, maxTransaction);
+        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = new ConnectedComponentsStartingTipSelector(tangle, maxTransaction, tipsViewModel);
         Collection<Hash> recentTransactions = connectedComponentsCalculator.findNMostRecentTransactions(transactions);
         Assert.assertTrue(recentTransactions.containsAll(transactions));
         Assert.assertTrue(recentTransactions.contains(Hash.NULL_HASH));
@@ -93,7 +104,7 @@ public class ConnectedComponentsCalculatorTest {
     public void oldTipsDroppedWhenStarAroundGenesisIsTooBig() throws Exception {
         List<Hash> transactions = makeStar(maxTransaction + 1, Hash.NULL_HASH, 1000);
 
-        ConnectedComponentsCalculator connectedComponentsCalculator = new ConnectedComponentsCalculator(tangle, maxTransaction);
+        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = new ConnectedComponentsStartingTipSelector(tangle, maxTransaction, tipsViewModel);
         Collection<Hash> recentTransactions = connectedComponentsCalculator.findNMostRecentTransactions(
                 transactions);
         Assert.assertFalse(recentTransactions.contains(Hash.NULL_HASH));
@@ -115,7 +126,7 @@ public class ConnectedComponentsCalculatorTest {
         List<Hash> allTips = new ArrayList<>(starTransactions);
         allTips.add(chainTransactions.get(chainLength - 1));
 
-        ConnectedComponentsCalculator connectedComponentsCalculator = new ConnectedComponentsCalculator(tangle, maxTransaction);
+        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = new ConnectedComponentsStartingTipSelector(tangle, maxTransaction, tipsViewModel);
         Collection<Hash> recentTransactions = connectedComponentsCalculator.findNMostRecentTransactions(allTips);
 
         Assert.assertTrue(recentTransactions.containsAll(chainTransactions)); // main chain is present
@@ -132,7 +143,7 @@ public class ConnectedComponentsCalculatorTest {
                 getRandomTransactionHash());
         transaction.store(tangle);
 
-        ConnectedComponentsCalculator connectedComponentsCalculator = new ConnectedComponentsCalculator(tangle, maxTransaction);
+        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = new ConnectedComponentsStartingTipSelector(tangle, maxTransaction, tipsViewModel);
         Collection<Set<Hash>> CC = new ArrayList<>(Collections.singleton(Collections.singleton(transaction.getHash())));
 
         Hash tip = connectedComponentsCalculator.randomlySelectTipFromLargestConnectedComponent(CC, Collections.singleton(transaction.getHash()));
@@ -153,7 +164,7 @@ public class ConnectedComponentsCalculatorTest {
                 getRandomTransactionHash());
         falseTip.store(tangle);
 
-        ConnectedComponentsCalculator connectedComponentsCalculator = new ConnectedComponentsCalculator(tangle, maxTransaction);
+        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = new ConnectedComponentsStartingTipSelector(tangle, maxTransaction, tipsViewModel);
         Collection<Set<Hash>> CC = new ArrayList<>(Collections.singleton(Collections.singleton(transaction.getHash())));
 
         //should throw IllegalStateException
@@ -167,7 +178,7 @@ public class ConnectedComponentsCalculatorTest {
         List<Hash> chainTransactions = makeChain(amount, Hash.NULL_HASH, 0);
         List<Hash> loneTransactions = makeStar(amount, Hash.NULL_HASH, 0);
 
-        ConnectedComponentsCalculator connectedComponentsCalculator = new ConnectedComponentsCalculator(tangle, maxTransaction);
+        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = new ConnectedComponentsStartingTipSelector(tangle, maxTransaction, tipsViewModel);
         Collection<Set<Hash>> CC = new ArrayList<>(Collections.singleton(new HashSet<>(chainTransactions)));
         loneTransactions.forEach(o -> CC.add(Collections.singleton(o)));
 
@@ -186,7 +197,7 @@ public class ConnectedComponentsCalculatorTest {
         List<Hash> hairOnChainTransactions = makeStar(amount, chainTip, 0);
         chainTransactions.addAll(hairOnChainTransactions);
 
-        ConnectedComponentsCalculator connectedComponentsCalculator = new ConnectedComponentsCalculator(tangle, maxTransaction);
+        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = new ConnectedComponentsStartingTipSelector(tangle, maxTransaction, tipsViewModel);
         Collection<Set<Hash>> CC = new ArrayList<>(Collections.singleton(new HashSet<>(chainTransactions)));
         loneTransactions.forEach(o -> CC.add(Collections.singleton(o)));
 
@@ -199,7 +210,7 @@ public class ConnectedComponentsCalculatorTest {
         final int amount = 10;
         Set<Hash> loneTransactions = new HashSet<>(makeStar(amount, Hash.NULL_HASH, 0));
 
-        ConnectedComponentsCalculator connectedComponentsCalculator = new ConnectedComponentsCalculator(tangle, maxTransaction);
+        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = new ConnectedComponentsStartingTipSelector(tangle, maxTransaction, tipsViewModel);
         Collection<Set<Hash>> components = connectedComponentsCalculator.getConnectedComponents(loneTransactions);
 
         Assert.assertEquals(amount, components.size());
@@ -221,7 +232,7 @@ public class ConnectedComponentsCalculatorTest {
             transactions.addAll(makeChain(chainSize, Hash.NULL_HASH, 0));
         }
 
-        ConnectedComponentsCalculator connectedComponentsCalculator = new ConnectedComponentsCalculator(tangle, maxTransaction);
+        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = new ConnectedComponentsStartingTipSelector(tangle, maxTransaction, tipsViewModel);
         Collection<Set<Hash>> components = connectedComponentsCalculator.getConnectedComponents(transactions);
 
         Assert.assertEquals(1, components.size());
@@ -238,7 +249,7 @@ public class ConnectedComponentsCalculatorTest {
             transactions.addAll(makeChain(chainSize, Hash.NULL_HASH, 0));
         }
 
-        ConnectedComponentsCalculator connectedComponentsCalculator = new ConnectedComponentsCalculator(tangle, maxTransaction);
+        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = new ConnectedComponentsStartingTipSelector(tangle, maxTransaction, tipsViewModel);
         Collection<Set<Hash>> components = connectedComponentsCalculator.getConnectedComponents(transactions);
 
         Assert.assertEquals(chainCount, components.size());
