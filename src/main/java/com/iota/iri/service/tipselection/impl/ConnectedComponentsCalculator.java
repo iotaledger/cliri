@@ -21,7 +21,7 @@ public class ConnectedComponentsCalculator {
         this.random = new SecureRandom();
     }
 
-    public Collection<Set<Hash>> getConnectedComponents(Set<Hash> transactions) throws Exception {
+    public Collection<Set<Hash>> getConnectedComponents(Collection<Hash> transactions) throws Exception {
         Set<Hash> unvisited = new HashSet<>(transactions);
         List<Set<Hash>> result = new ArrayList<>();
 
@@ -39,8 +39,8 @@ public class ConnectedComponentsCalculator {
                     unvisited.remove(currentHash);
                     currentComponent.add(currentHash);
 
-                    getNeighbors(currentHash).stream()
-                        .filter(t -> unvisited.contains(t))
+                    getAdjacent(currentHash).stream()
+                        .filter(unvisited::contains)
                         .forEach(stack::push);
                 }
             }
@@ -51,7 +51,7 @@ public class ConnectedComponentsCalculator {
         return result;
     }
 
-    private Collection<Hash> getNeighbors(Hash hash) throws Exception {
+    private Collection<Hash> getAdjacent(Hash hash) throws Exception {
         Collection<Hash> result = new HashSet<>();
 
         TransactionViewModel transaction = TransactionViewModel.fromHash(tangle, hash);

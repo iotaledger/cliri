@@ -197,7 +197,7 @@ public class ConnectedComponentsCalculatorTest {
     @Test
     public void getConnectedComponentsReturnsCorrectSetsForStar() throws Exception {
         final int amount = 10;
-        Set<Hash> loneTransactions = new HashSet<Hash>(makeStar(amount, Hash.NULL_HASH, 0));
+        Set<Hash> loneTransactions = new HashSet<>(makeStar(amount, Hash.NULL_HASH, 0));
 
         ConnectedComponentsCalculator connectedComponentsCalculator = new ConnectedComponentsCalculator(tangle, maxTransaction);
         Collection<Set<Hash>> components = connectedComponentsCalculator.getConnectedComponents(loneTransactions);
