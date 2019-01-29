@@ -194,6 +194,59 @@ public class ConnectedComponentsCalculatorTest {
         Assert.assertTrue(hairOnChainTransactions.contains(tip));
     }
 
+    @Test
+    public void getConnectedComponentsReturnsCorrectSetsForStar() throws Exception {
+        final int amount = 10;
+        Set<Hash> loneTransactions = new HashSet<Hash>(makeStar(amount, Hash.NULL_HASH, 0));
+
+        ConnectedComponentsCalculator connectedComponentsCalculator = new ConnectedComponentsCalculator(tangle, maxTransaction);
+        Collection<Set<Hash>> components = connectedComponentsCalculator.getConnectedComponents(loneTransactions);
+
+        Assert.assertEquals(amount, components.size());
+        for (Set<Hash> component : components) {
+            Assert.assertEquals(1, component.size());
+            Assert.assertTrue(loneTransactions.contains(component.iterator().next()));
+        }
+    }
+
+    @Test
+    public void getConnectedComponentsReturnsCorrectSetsForStarsPlusGenesis() throws Exception {
+        final int chainSize = 5;
+        final int chainCount = 10;
+        Set<Hash> transactions = new HashSet<>();
+
+        transactions.add(Hash.NULL_HASH);
+
+        for (int i = 0; i < chainCount; i++) {
+            transactions.addAll(makeChain(chainSize, Hash.NULL_HASH, 0));
+        }
+
+        ConnectedComponentsCalculator connectedComponentsCalculator = new ConnectedComponentsCalculator(tangle, maxTransaction);
+        Collection<Set<Hash>> components = connectedComponentsCalculator.getConnectedComponents(transactions);
+
+        Assert.assertEquals(1, components.size());
+        Assert.assertEquals(chainSize * chainCount + 1, components.iterator().next().size());
+    }
+
+    @Test
+    public void getConnectedComponentsReturnsCorrectSetsForManyChains() throws Exception {
+        final int chainSize = 5;
+        final int chainCount = 10;
+        Set<Hash> transactions = new HashSet<>();
+
+        for (int i = 0; i < chainCount; i++) {
+            transactions.addAll(makeChain(chainSize, Hash.NULL_HASH, 0));
+        }
+
+        ConnectedComponentsCalculator connectedComponentsCalculator = new ConnectedComponentsCalculator(tangle, maxTransaction);
+        Collection<Set<Hash>> components = connectedComponentsCalculator.getConnectedComponents(transactions);
+
+        Assert.assertEquals(chainCount, components.size());
+        for (Set<Hash> component : components) {
+            Assert.assertEquals(chainSize, component.size());
+        }
+    }
+
     private List<Hash> makeChain(int length, Hash tip, long startArrivalTime) throws Exception {
         List<Hash> chain = new ArrayList<>();
 
