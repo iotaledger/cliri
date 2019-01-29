@@ -31,23 +31,17 @@ public class ConnectedComponentsCalculator {
 
             // Perform DFS scan to find all elements in this component
             Deque<Hash> stack = new ArrayDeque<>();
-            Hash currentHash = unvisited.iterator().next();
-            stack.push(currentHash);
+            stack.push(unvisited.iterator().next());
             while (!stack.isEmpty()) {
-                currentHash = stack.pop();
+                Hash currentHash = stack.pop();
 
                 if (!currentComponent.contains(currentHash)) {
                     unvisited.remove(currentHash);
                     currentComponent.add(currentHash);
 
-                    Collection<Hash> neighbors = getNeighbors(currentHash);
-                    Collection<Hash> unvisitedNeighbors = neighbors.stream()
+                    getNeighbors(currentHash).stream()
                         .filter(t -> unvisited.contains(t))
-                        .collect(Collectors.toSet());
-
-                    for (Hash neighbor : unvisitedNeighbors) {
-                        stack.push(neighbor);
-                    }
+                        .forEach(stack::push);
                 }
             }
 
