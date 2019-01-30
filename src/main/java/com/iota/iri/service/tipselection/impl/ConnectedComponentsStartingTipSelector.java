@@ -35,7 +35,7 @@ public class ConnectedComponentsStartingTipSelector implements StartingTipSelect
         return this.randomlySelectTipFromLargestConnectedComponent(components, latestTips);
     }
 
-    public Collection<Set<Hash>> getConnectedComponents(Collection<Hash> transactions) throws Exception {
+    private Collection<Set<Hash>> getConnectedComponents(Collection<Hash> transactions) throws Exception {
         Set<Hash> unvisited = new HashSet<>(transactions);
         List<Set<Hash>> result = new ArrayList<>();
 
@@ -76,7 +76,7 @@ public class ConnectedComponentsStartingTipSelector implements StartingTipSelect
         return result;
     }
 
-    public Collection<Hash> findNMostRecentTransactions(Collection<Hash> tips) throws Exception {
+    private Collection<Hash> findNMostRecentTransactions(Collection<Hash> tips) throws Exception {
 
         Collection<Hash> result = new HashSet<>(maxTransactions);
 
@@ -106,7 +106,7 @@ public class ConnectedComponentsStartingTipSelector implements StartingTipSelect
         return result;
     }
 
-    public Hash randomlySelectTipFromLargestConnectedComponent(Collection<Set<Hash>> connectedComponents,
+    private Hash randomlySelectTipFromLargestConnectedComponent(Collection<Set<Hash>> connectedComponents,
                                                                Collection<Hash> tips) {
         Collection<Hash> largestComponent = connectedComponents.stream()
                 .max(Comparator.comparing(Collection::size))

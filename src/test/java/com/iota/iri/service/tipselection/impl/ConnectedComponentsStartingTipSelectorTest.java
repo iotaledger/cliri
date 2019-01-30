@@ -4,11 +4,8 @@ import static com.iota.iri.controllers.TransactionViewModelTest.getRandomTransac
 import static com.iota.iri.controllers.TransactionViewModelTest.getRandomTransactionWithTrunkAndBranch;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 
 import com.iota.iri.controllers.TipsViewModel;
 import com.iota.iri.controllers.TransactionViewModel;
@@ -30,7 +27,7 @@ public class ConnectedComponentsStartingTipSelectorTest {
     private Tangle tangle;
     private TipsViewModel tipsViewModel;
 
-    private int maxTransaction = 100;
+    private int maxTransactions = 50;
 
     @After
     public void tearDown() throws Exception {
@@ -53,86 +50,57 @@ public class ConnectedComponentsStartingTipSelectorTest {
     }
 
     @Test
-    public void returnsGenesisInSingleTxTangle() throws Exception {
-        TransactionViewModel transaction = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(
-                Hash.NULL_HASH,
-                Hash.NULL_HASH),
-                getRandomTransactionHash());
-        transaction.store(tangle);
+    public void oldTipIgnoredInTwoComponentStructure() throws Exception {
+        List<Hash> oldTransactions = makeChain(maxTransactions, Hash.NULL_HASH, 1000);
+        List<Hash> newTransactions = makeChain(maxTransactions, Hash.NULL_HASH, 2000 + maxTransactions);
+        Hash oldTip = oldTransactions.get(oldTransactions.size() - 1);
+        Hash newTip = newTransactions.get(newTransactions.size() - 1);
+        Mockito.when(tipsViewModel.getLatestSolidTips(Mockito.anyInt())).thenReturn(Arrays.asList(oldTip, newTip));
+        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = new ConnectedComponentsStartingTipSelector(tangle, maxTransactions, tipsViewModel);
 
-        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = new ConnectedComponentsStartingTipSelector(tangle, maxTransaction, tipsViewModel);
-        Collection<Hash> recentTransactions = connectedComponentsCalculator.findNMostRecentTransactions(
-                Collections.singleton(transaction.getHash()));
+        Hash selectedTip = connectedComponentsCalculator.getTip();
 
-        Assert.assertTrue(recentTransactions.contains(transaction.getHash()));
-        Assert.assertTrue(recentTransactions.contains(Hash.NULL_HASH));
+        Assert.assertEquals(newTip, selectedTip);
     }
 
     @Test
-    public void returnsGenesisTxInChain() throws Exception {
-        int chainLength = maxTransaction - 10;
-        List<Hash> transactions = makeChain(chainLength, Hash.NULL_HASH, 1000);
+    public void selectTipFromBiggerComponentInTwoComponentStructure() throws Exception {
+        int chainLength = 20;
+        int max = chainLength * 10;
 
-        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = new ConnectedComponentsStartingTipSelector(tangle, maxTransaction, tipsViewModel);
-        Collection<Hash> recentTransactions = connectedComponentsCalculator.findNMostRecentTransactions(
-                Collections.singleton(transactions.get(transactions.size() - 1)));
-        Assert.assertTrue(recentTransactions.contains(Hash.NULL_HASH));
-        Assert.assertEquals(chainLength + 1, recentTransactions.size());
-    }
+        List<Hash> bigChainTransactions = makeChain(chainLength, getRandomTransactionHash(), 1000);
+        List<Hash> bigChainTips = new ArrayList<>(Arrays.asList(bigChainTransactions.get(bigChainTransactions.size() - 1)));
+        bigChainTransactions.addAll(makeChain(chainLength, bigChainTransactions.get(0), 1000));
+        bigChainTips.add(bigChainTransactions.get(bigChainTransactions.size() - 1));
 
-    @Test
-    public void doesntReturnsGenesisTxInChain() throws Exception {
-        List<Hash> transactions = makeChain(maxTransaction + 1, Hash.NULL_HASH, 1000);
+        List<Hash> smallChainTransactions = makeChain(chainLength, getRandomTransactionHash(), 1000);
+        Hash smallChainTip = smallChainTransactions.get(smallChainTransactions.size() - 1);
 
-        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = new ConnectedComponentsStartingTipSelector(tangle, maxTransaction, tipsViewModel);
-        Collection<Hash> recentTransactions = connectedComponentsCalculator.findNMostRecentTransactions(
-                Collections.singleton(transactions.get(transactions.size() - 1)));
-        Assert.assertFalse(recentTransactions.contains(Hash.NULL_HASH));
-    }
+        Mockito.when(tipsViewModel.getLatestSolidTips(Mockito.anyInt()))
+            .thenReturn(Arrays.asList(bigChainTips.get(0), bigChainTips.get(1), smallChainTip));
 
-    @Test
-    public void allTipsAndGenesisReturnedForStarAroundGenesis() throws Exception {
-        List<Hash> transactions = makeStar(maxTransaction - 1, Hash.NULL_HASH, 1000);
+        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = 
+            new ConnectedComponentsStartingTipSelector(tangle, max, tipsViewModel);
 
-        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = new ConnectedComponentsStartingTipSelector(tangle, maxTransaction, tipsViewModel);
-        Collection<Hash> recentTransactions = connectedComponentsCalculator.findNMostRecentTransactions(transactions);
-        Assert.assertTrue(recentTransactions.containsAll(transactions));
-        Assert.assertTrue(recentTransactions.contains(Hash.NULL_HASH));
+        Hash selectedTip = connectedComponentsCalculator.getTip();
+
+        Assert.assertTrue(bigChainTips.contains(selectedTip));
+        Assert.assertNotEquals(smallChainTip, selectedTip);
     }
 
     @Test
     public void oldTipsDroppedWhenStarAroundGenesisIsTooBig() throws Exception {
-        List<Hash> transactions = makeStar(maxTransaction + 1, Hash.NULL_HASH, 1000);
+        List<Hash> transactions = makeStar(maxTransactions * 100, Hash.NULL_HASH, 1000);
+        List<Hash> newestTransactions = transactions.subList(transactions.size() - maxTransactions, transactions.size());
 
-        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = new ConnectedComponentsStartingTipSelector(tangle, maxTransaction, tipsViewModel);
-        Collection<Hash> recentTransactions = connectedComponentsCalculator.findNMostRecentTransactions(
-                transactions);
-        Assert.assertFalse(recentTransactions.contains(Hash.NULL_HASH));
-        Assert.assertFalse(recentTransactions.containsAll(transactions)); // there exists one tip not in list
-    }
+        Mockito.when(tipsViewModel.getLatestSolidTips(Mockito.anyInt())).thenReturn(transactions);
 
-    @Test
-    public void mostRecentTipsChosenFromStarAroundGenesisAndChain() throws Exception {
-        long incr = 1000;
+        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = 
+            new ConnectedComponentsStartingTipSelector(tangle, maxTransactions, tipsViewModel);
 
-        final int starAmount = maxTransaction / 10;
-        //star
-        List<Hash> starTransactions = makeStar(starAmount, Hash.NULL_HASH, incr);
+        Hash selectedTip = connectedComponentsCalculator.getTip();
 
-        //chain
-        final int chainLength = maxTransaction  - 1;
-        List<Hash> chainTransactions = makeChain(chainLength, Hash.NULL_HASH, incr + starAmount);
-
-        List<Hash> allTips = new ArrayList<>(starTransactions);
-        allTips.add(chainTransactions.get(chainLength - 1));
-
-        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = new ConnectedComponentsStartingTipSelector(tangle, maxTransaction, tipsViewModel);
-        Collection<Hash> recentTransactions = connectedComponentsCalculator.findNMostRecentTransactions(allTips);
-
-        Assert.assertTrue(recentTransactions.containsAll(chainTransactions)); // main chain is present
-        Assert.assertTrue(recentTransactions.contains(starTransactions.get(starAmount - 1))); // only the newest star tip appears
-        Assert.assertFalse(recentTransactions.contains(starTransactions.get(starAmount - 2))); // only the newest star tip appears
-        Assert.assertFalse(recentTransactions.contains(Hash.NULL_HASH));
+        Assert.assertTrue(newestTransactions.contains(selectedTip));
     }
 
     @Test
@@ -143,119 +111,78 @@ public class ConnectedComponentsStartingTipSelectorTest {
                 getRandomTransactionHash());
         transaction.store(tangle);
 
-        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = new ConnectedComponentsStartingTipSelector(tangle, maxTransaction, tipsViewModel);
-        Collection<Set<Hash>> CC = new ArrayList<>(Collections.singleton(Collections.singleton(transaction.getHash())));
+        Mockito.when(tipsViewModel.getLatestSolidTips(Mockito.anyInt())).thenReturn(Arrays.asList(transaction.getHash()));
 
-        Hash tip = connectedComponentsCalculator.randomlySelectTipFromLargestConnectedComponent(CC, Collections.singleton(transaction.getHash()));
+        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = 
+            new ConnectedComponentsStartingTipSelector(tangle, maxTransactions, tipsViewModel);
+
+        Hash tip = connectedComponentsCalculator.getTip();
+
         Assert.assertEquals(transaction.getHash(), tip);
     }
 
     @Test(expected = IllegalStateException.class)
     public void failOnEmptyConnectedComponentIntersection() throws Exception {
-        TransactionViewModel transaction = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(
-                Hash.NULL_HASH,
-                Hash.NULL_HASH),
-                getRandomTransactionHash());
-        transaction.store(tangle);
+        ConnectedComponentsStartingTipSelector connectedComponentsCalculator =
+            new ConnectedComponentsStartingTipSelector(tangle, maxTransactions, tipsViewModel);
 
-        TransactionViewModel falseTip = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(
-                Hash.NULL_HASH,
-                Hash.NULL_HASH),
-                getRandomTransactionHash());
-        falseTip.store(tangle);
-
-        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = new ConnectedComponentsStartingTipSelector(tangle, maxTransaction, tipsViewModel);
-        Collection<Set<Hash>> CC = new ArrayList<>(Collections.singleton(Collections.singleton(transaction.getHash())));
+        Mockito.when(tipsViewModel.getLatestSolidTips(Mockito.anyInt())).thenReturn(Arrays.asList());
 
         //should throw IllegalStateException
-        Hash tip = connectedComponentsCalculator.randomlySelectTipFromLargestConnectedComponent(CC,
-                Collections.singleton(falseTip.getHash()));
+        connectedComponentsCalculator.getTip();
     }
 
     @Test
     public void selectTipFromLargestConnectedComponentWithOneTip() throws Exception {
         int amount = 10;
-        List<Hash> chainTransactions = makeChain(amount, Hash.NULL_HASH, 0);
-        List<Hash> loneTransactions = makeStar(amount, Hash.NULL_HASH, 0);
-
-        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = new ConnectedComponentsStartingTipSelector(tangle, maxTransaction, tipsViewModel);
-        Collection<Set<Hash>> CC = new ArrayList<>(Collections.singleton(new HashSet<>(chainTransactions)));
-        loneTransactions.forEach(o -> CC.add(Collections.singleton(o)));
-
+        List<Hash> chainTransactions = makeChain(amount, getRandomTransactionHash(), 0);
         Hash chainTip = chainTransactions.get(amount - 1);
-        Hash tip = connectedComponentsCalculator.randomlySelectTipFromLargestConnectedComponent(CC, Collections.singleton(chainTip));
+
+        // Create singleton detached transactions
+        List<Hash> loneTransactions = new ArrayList<>();
+        for (int i=0; i < amount; i++) {
+            loneTransactions = makeStar(1, getRandomTransactionHash(), 0);
+        }
+
+        List<Hash> allTips = new ArrayList<>(loneTransactions);
+        allTips.add(chainTip);
+
+        Mockito.when(tipsViewModel.getLatestSolidTips(Mockito.anyInt())).thenReturn(allTips);
+
+        ConnectedComponentsStartingTipSelector connectedComponentsCalculator =
+            new ConnectedComponentsStartingTipSelector(tangle, maxTransactions, tipsViewModel);
+
+        Hash tip = connectedComponentsCalculator.getTip();
+
         Assert.assertEquals(chainTip, tip);
     }
 
     @Test
     public void selectTipFromLargestConnectedComponentWithMultipleTips() throws Exception {
         int amount = 10;
-        List<Hash> chainTransactions = makeChain(amount, Hash.NULL_HASH, 0);
-        List<Hash> loneTransactions = makeStar(amount, Hash.NULL_HASH, 0);
+        List<Hash> chainTransactions = makeChain(amount, getRandomTransactionHash(), 0);
+
+        // Create singleton detached transactions
+        List<Hash> loneTransactions = new ArrayList<>();
+        for (int i=0; i < amount; i++) {
+            loneTransactions = makeStar(1, getRandomTransactionHash(), 0);
+        }
 
         Hash chainTip = chainTransactions.get(amount - 1);
         List<Hash> hairOnChainTransactions = makeStar(amount, chainTip, 0);
         chainTransactions.addAll(hairOnChainTransactions);
 
-        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = new ConnectedComponentsStartingTipSelector(tangle, maxTransaction, tipsViewModel);
-        Collection<Set<Hash>> CC = new ArrayList<>(Collections.singleton(new HashSet<>(chainTransactions)));
-        loneTransactions.forEach(o -> CC.add(Collections.singleton(o)));
+        List<Hash> allTips = new ArrayList<>(loneTransactions);
+        allTips.addAll(hairOnChainTransactions);
 
-        Hash tip = connectedComponentsCalculator.randomlySelectTipFromLargestConnectedComponent(CC, hairOnChainTransactions);
-        Assert.assertTrue(hairOnChainTransactions.contains(tip));
-    }
+        Mockito.when(tipsViewModel.getLatestSolidTips(Mockito.anyInt())).thenReturn(allTips);
 
-    @Test
-    public void getConnectedComponentsReturnsCorrectSetsForStar() throws Exception {
-        final int amount = 10;
-        Set<Hash> loneTransactions = new HashSet<>(makeStar(amount, Hash.NULL_HASH, 0));
+        ConnectedComponentsStartingTipSelector connectedComponentsCalculator =
+            new ConnectedComponentsStartingTipSelector(tangle, maxTransactions, tipsViewModel);
 
-        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = new ConnectedComponentsStartingTipSelector(tangle, maxTransaction, tipsViewModel);
-        Collection<Set<Hash>> components = connectedComponentsCalculator.getConnectedComponents(loneTransactions);
+        Hash selectedTip = connectedComponentsCalculator.getTip();
 
-        Assert.assertEquals(amount, components.size());
-        for (Set<Hash> component : components) {
-            Assert.assertEquals(1, component.size());
-            Assert.assertTrue(loneTransactions.contains(component.iterator().next()));
-        }
-    }
-
-    @Test
-    public void getConnectedComponentsReturnsCorrectSetsForStarsPlusGenesis() throws Exception {
-        final int chainSize = 5;
-        final int chainCount = 10;
-        Set<Hash> transactions = new HashSet<>();
-
-        transactions.add(Hash.NULL_HASH);
-
-        for (int i = 0; i < chainCount; i++) {
-            transactions.addAll(makeChain(chainSize, Hash.NULL_HASH, 0));
-        }
-
-        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = new ConnectedComponentsStartingTipSelector(tangle, maxTransaction, tipsViewModel);
-        Collection<Set<Hash>> components = connectedComponentsCalculator.getConnectedComponents(transactions);
-
-        Assert.assertEquals(1, components.size());
-        Assert.assertEquals(chainSize * chainCount + 1, components.iterator().next().size());
-    }
-
-    @Test
-    public void getConnectedComponentsReturnsCorrectSetsForManyChains() throws Exception {
-        final int chainSize = 5;
-        final int chainCount = 10;
-        Set<Hash> transactions = new HashSet<>();
-
-        for (int i = 0; i < chainCount; i++) {
-            transactions.addAll(makeChain(chainSize, Hash.NULL_HASH, 0));
-        }
-
-        ConnectedComponentsStartingTipSelector connectedComponentsCalculator = new ConnectedComponentsStartingTipSelector(tangle, maxTransaction, tipsViewModel);
-        Collection<Set<Hash>> components = connectedComponentsCalculator.getConnectedComponents(transactions);
-
-        Assert.assertEquals(chainCount, components.size());
-        for (Set<Hash> component : components) {
-            Assert.assertEquals(chainSize, component.size());
-        }
+        Assert.assertTrue(hairOnChainTransactions.contains(selectedTip));
     }
 
     private List<Hash> makeChain(int length, Hash tip, long startArrivalTime) throws Exception {
