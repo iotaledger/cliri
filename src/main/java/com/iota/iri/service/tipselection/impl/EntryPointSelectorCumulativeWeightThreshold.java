@@ -1,15 +1,11 @@
 package com.iota.iri.service.tipselection.impl;
 
-import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Objects;
-import java.util.Queue;
 
-import com.iota.iri.controllers.ApproveeViewModel;
-import com.iota.iri.controllers.TipsViewModel;
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.Hash;
 import com.iota.iri.service.tipselection.EntryPointSelector;
+import com.iota.iri.service.tipselection.StartingTipSelector;
 import com.iota.iri.storage.Tangle;
 
 import org.apache.commons.lang3.NotImplementedException;
@@ -21,16 +17,16 @@ import org.apache.commons.lang3.NotImplementedException;
 public class EntryPointSelectorCumulativeWeightThreshold implements EntryPointSelector {
     public final Tangle tangle;
     private final CumulativeWeightCalculator cumulativeWeightCalculator;
-    private final TipsViewModel tipsViewModel;
+    private final StartingTipSelector startingTipSelector;
     private final int threshold;
 
     public static int MAX_SUBTANGLE_SIZE = 4 * CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE;
 
-    public EntryPointSelectorCumulativeWeightThreshold(Tangle tangle, TipsViewModel tipsViewModel, int threshold) {
+    public EntryPointSelectorCumulativeWeightThreshold(Tangle tangle, int threshold, StartingTipSelector startingTipSelector) {
         this.tangle = tangle;
         this.cumulativeWeightCalculator = new CumulativeWeightCalculator(tangle);
-        this.tipsViewModel = tipsViewModel;
         this.threshold = threshold;
+        this.startingTipSelector = startingTipSelector;
     }
 
     @Override
@@ -40,8 +36,7 @@ public class EntryPointSelectorCumulativeWeightThreshold implements EntryPointSe
 
     @Override
     public Hash getEntryPoint() throws Exception {
-        Hash tip = tipsViewModel.getRandomSolidTipHash();
-        Hash entryPoint = backtrack(tip, threshold);
+        Hash entryPoint = backtrack(this.startingTipSelector.getTip(), threshold);
 
         int subtangleWeight = cumulativeWeightCalculator.calculateSingle(entryPoint);
         if (subtangleWeight > MAX_SUBTANGLE_SIZE) {

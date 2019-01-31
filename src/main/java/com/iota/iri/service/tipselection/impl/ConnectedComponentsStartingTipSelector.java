@@ -1,27 +1,41 @@
 package com.iota.iri.service.tipselection.impl;
 
 import com.iota.iri.controllers.ApproveeViewModel;
+import com.iota.iri.controllers.TipsViewModel;
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.Hash;
+import com.iota.iri.service.tipselection.StartingTipSelector;
 import com.iota.iri.storage.Tangle;
 
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class ConnectedComponentsCalculator {
+public class ConnectedComponentsStartingTipSelector implements StartingTipSelector {
     public final Tangle tangle;
 
     private final int maxTransactions;
+    private final int maxInitialTips;
     private final Random random;
+    private final TipsViewModel tipsViewModel;
 
-    public ConnectedComponentsCalculator(Tangle tangle, int maxTransactions) {
-        this.maxTransactions = maxTransactions;
+    public ConnectedComponentsStartingTipSelector(Tangle tangle, int maxTransactions, TipsViewModel tipsViewModel) {
         this.tangle = tangle;
+        this.maxTransactions = maxTransactions;
+        this.maxInitialTips = (int) Math.sqrt(maxTransactions);
+        this.tipsViewModel = tipsViewModel;
         this.random = new SecureRandom();
     }
 
-    public Collection<Set<Hash>> getConnectedComponents(Set<Hash> transactions) throws Exception {
+    @Override
+    public Hash getTip() throws Exception {
+        List<Hash> latestTips = tipsViewModel.getLatestSolidTips(maxInitialTips);
+        Collection<Hash> latestTransactions = this.findNMostRecentTransactions(latestTips);
+        Collection<Set<Hash>> components = this.getConnectedComponents(latestTransactions);
+        return this.randomlySelectTipFromLargestConnectedComponent(components, latestTips);
+    }
+
+    private Collection<Set<Hash>> getConnectedComponents(Collection<Hash> transactions) throws Exception {
         Set<Hash> unvisited = new HashSet<>(transactions);
         List<Set<Hash>> result = new ArrayList<>();
 
@@ -39,8 +53,8 @@ public class ConnectedComponentsCalculator {
                     unvisited.remove(currentHash);
                     currentComponent.add(currentHash);
 
-                    getNeighbors(currentHash).stream()
-                        .filter(t -> unvisited.contains(t))
+                    getAdjacent(currentHash).stream()
+                        .filter(unvisited::contains)
                         .forEach(stack::push);
                 }
             }
@@ -51,7 +65,7 @@ public class ConnectedComponentsCalculator {
         return result;
     }
 
-    private Collection<Hash> getNeighbors(Hash hash) throws Exception {
+    private Collection<Hash> getAdjacent(Hash hash) throws Exception {
         Collection<Hash> result = new HashSet<>();
 
         TransactionViewModel transaction = TransactionViewModel.fromHash(tangle, hash);
@@ -62,7 +76,7 @@ public class ConnectedComponentsCalculator {
         return result;
     }
 
-    public Collection<Hash> findNMostRecentTransactions(Collection<Hash> tips) throws Exception {
+    private Collection<Hash> findNMostRecentTransactions(Collection<Hash> tips) throws Exception {
 
         Collection<Hash> result = new HashSet<>(maxTransactions);
 
@@ -92,7 +106,7 @@ public class ConnectedComponentsCalculator {
         return result;
     }
 
-    public Hash randomlySelectTipFromLargestConnectedComponent(Collection<Set<Hash>> connectedComponents,
+    private Hash randomlySelectTipFromLargestConnectedComponent(Collection<Set<Hash>> connectedComponents,
                                                                Collection<Hash> tips) {
         Collection<Hash> largestComponent = connectedComponents.stream()
                 .max(Comparator.comparing(Collection::size))

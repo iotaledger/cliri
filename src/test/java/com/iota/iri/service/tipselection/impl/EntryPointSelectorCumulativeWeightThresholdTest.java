@@ -7,10 +7,10 @@ import static com.iota.iri.controllers.TransactionViewModelTest.getRandomTransac
 import java.util.ArrayList;
 import java.util.List;
 
-import com.iota.iri.controllers.TipsViewModel;
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.Hash;
 import com.iota.iri.service.tipselection.EntryPointSelector;
+import com.iota.iri.service.tipselection.StartingTipSelector;
 import com.iota.iri.storage.Tangle;
 import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
 
@@ -27,7 +27,7 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
     private TemporaryFolder dbFolder;
     private TemporaryFolder logFolder;
     private Tangle tangle;
-    private TipsViewModel tipsViewModel;
+    private StartingTipSelector startingTipSelector;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -49,7 +49,7 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
                 logFolder.getRoot().getAbsolutePath(), 1000));
         tangle.init();
 
-        tipsViewModel = Mockito.mock(TipsViewModel.class);
+        startingTipSelector = Mockito.mock(StartingTipSelector.class);
     }
 
     @Test
@@ -61,9 +61,9 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
         transaction.store(tangle);
 
         final int threshold = 50;
-        Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(transaction.getBundleHash());
+        Mockito.when(startingTipSelector.getTip()).thenReturn(transaction.getBundleHash());
         
-        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold);
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, threshold, startingTipSelector);
         Hash entryPoint = entryPointSelector.getEntryPoint();
 
         Assert.assertEquals(Hash.NULL_HASH, entryPoint);
@@ -89,9 +89,9 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
             transaction.store(tangle);
         }
 
-        Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(transactions.get(transactions.size() - 1).getHash());
+        Mockito.when(startingTipSelector.getTip()).thenReturn(transactions.get(transactions.size() - 1).getHash());
         
-        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold);
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, threshold, startingTipSelector);
         Hash entryPoint = entryPointSelector.getEntryPoint();
 
         Assert.assertNotEquals(Hash.NULL_HASH, entryPoint);
@@ -125,9 +125,9 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
             }
         }
 
-        Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(mainStalk.get(mainStalk.size() - 1).getHash());
+        Mockito.when(startingTipSelector.getTip()).thenReturn(mainStalk.get(mainStalk.size() - 1).getHash());
         
-        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold);
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, threshold, startingTipSelector);
         Hash entryPoint = entryPointSelector.getEntryPoint();
 
         Assert.assertNotEquals(Hash.NULL_HASH, entryPoint);
@@ -156,9 +156,9 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
             shortChainTip = newTip.getHash();
         }
 
-        Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(shortChainTip);
+        Mockito.when(startingTipSelector.getTip()).thenReturn(shortChainTip);
         
-        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold);
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, threshold, startingTipSelector);
 
         exception.expect(IllegalStateException.class);
         entryPointSelector.getEntryPoint();
@@ -175,9 +175,9 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
         List<Hash> shortChain = makeChain(shortChainLength);
 
         // Start from the short chain, so we start the BFS from the genesis
-        Mockito.when(tipsViewModel.getRandomSolidTipHash()).thenReturn(shortChain.get(shortChain.size() - 1));
+        Mockito.when(startingTipSelector.getTip()).thenReturn(shortChain.get(shortChain.size() - 1));
         
-        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, tipsViewModel, threshold);
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, threshold, startingTipSelector);
 
         Hash entryPoint = entryPointSelector.getEntryPoint();
 
