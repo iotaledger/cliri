@@ -22,7 +22,7 @@ public class ConnectedComponentsStartingTipSelector implements StartingTipSelect
     public ConnectedComponentsStartingTipSelector(Tangle tangle, int maxTransactions, TipsViewModel tipsViewModel) {
         this.tangle = tangle;
         this.maxTransactions = maxTransactions;
-        this.maxInitialTips = maxTransactions / 4;
+        this.maxInitialTips = (int) Math.sqrt(maxTransactions);
         this.tipsViewModel = tipsViewModel;
         this.random = new SecureRandom();
     }
