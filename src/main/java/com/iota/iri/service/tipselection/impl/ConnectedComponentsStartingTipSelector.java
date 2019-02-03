@@ -76,7 +76,7 @@ public class ConnectedComponentsStartingTipSelector implements StartingTipSelect
         return result;
     }
 
-    private Collection<Hash> findNMostRecentTransactions(Collection<Hash> tips) {
+    private Collection<Hash> findNMostRecentTransactions(Collection<Hash> tips) throws Exception {
 
         Collection<Hash> result = new HashSet<>(maxTransactions);
 
@@ -100,7 +100,7 @@ public class ConnectedComponentsStartingTipSelector implements StartingTipSelect
             List<Hash> approvees = Arrays.asList(trunkHash, branchHash);
             for (Hash approvee: approvees) {
                 if (!visited.contains(approvee)) {
-                    queue.add(fromHash(approvee));
+                    queue.add(TransactionViewModel.fromHash(tangle, approvee));
                     visited.add(approvee);
                 }
             }
