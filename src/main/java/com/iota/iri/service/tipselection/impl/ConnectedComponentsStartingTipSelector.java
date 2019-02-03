@@ -83,6 +83,7 @@ public class ConnectedComponentsStartingTipSelector implements StartingTipSelect
         //using a max heap sorted by arrivalTime.
         Queue<TransactionViewModel> queue = new PriorityQueue<>(maxTransactions,
                 Comparator.comparingLong(a -> (-1) * a.getArrivalTime()));
+        Set<Hash> visited = new HashSet<>(maxTransactions);
 
         //the heap is initialized with the tips.
         tips.stream().map(this::fromHash).forEach(queue::add);
@@ -95,11 +96,13 @@ public class ConnectedComponentsStartingTipSelector implements StartingTipSelect
             Hash trunkHash = current.getTrunkTransactionHash();
             Hash branchHash = current.getBranchTransactionHash();
 
-            if (!result.contains(trunkHash)) {
+            if (!visited.contains(trunkHash)) {
                 queue.add(current.getTrunkTransaction(tangle));
+                visited.add(trunkHash);
             }
-            if (!trunkHash.equals(branchHash) && !result.contains(branchHash)) {
+            if (!visited.contains(branchHash)) {
                 queue.add(current.getBranchTransaction(tangle));
+                visited.add(branchHash);
             }
         }
 
