@@ -76,7 +76,7 @@ public class ConnectedComponentsStartingTipSelector implements StartingTipSelect
         return result;
     }
 
-    private Collection<Hash> findNMostRecentTransactions(Collection<Hash> tips) throws Exception {
+    private Collection<Hash> findNMostRecentTransactions(Collection<Hash> tips) {
 
         Collection<Hash> result = new HashSet<>(maxTransactions);
 
@@ -87,6 +87,7 @@ public class ConnectedComponentsStartingTipSelector implements StartingTipSelect
 
         //the heap is initialized with the tips.
         tips.stream().map(this::fromHash).forEach(queue::add);
+        visited.addAll(tips);
 
         while (!queue.isEmpty() && result.size() < maxTransactions) {
             TransactionViewModel current = queue.poll();
@@ -96,13 +97,12 @@ public class ConnectedComponentsStartingTipSelector implements StartingTipSelect
             Hash trunkHash = current.getTrunkTransactionHash();
             Hash branchHash = current.getBranchTransactionHash();
 
-            if (!visited.contains(trunkHash)) {
-                queue.add(current.getTrunkTransaction(tangle));
-                visited.add(trunkHash);
-            }
-            if (!visited.contains(branchHash)) {
-                queue.add(current.getBranchTransaction(tangle));
-                visited.add(branchHash);
+            List<Hash> approvees = Arrays.asList(trunkHash, branchHash);
+            for (Hash approvee: approvees) {
+                if (!visited.contains(approvee)) {
+                    queue.add(fromHash(approvee));
+                    visited.add(approvee);
+                }
             }
         }
 
