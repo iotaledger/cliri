@@ -60,7 +60,6 @@ public class DatabaseRecycler {
             final long latestEpochTimestampInSeconds = (System.currentTimeMillis() - acceptableLatencyInMs) / 1000;
             TransactionValidator.setLatestEpochTimestamp(latestEpochTimestampInSeconds);
             transactionRequester.clearQueue();
-            tipsViewModel.clear();
 
             try {
                 transactionValidator.clearSolidTransactionsQueue();
@@ -68,6 +67,8 @@ public class DatabaseRecycler {
             } catch (Exception e) {
                 log.error("Failed while recycling database", e);
             }
+
+            tipsViewModel.clear();
         }
     };
 }
