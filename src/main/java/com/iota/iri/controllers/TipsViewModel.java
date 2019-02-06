@@ -163,19 +163,19 @@ public class TipsViewModel {
                     solidApprovers.add(approver);
                 }
             }
+            
+            // Add solid approvers to queue
+            for (Hash approver : solidApprovers) {
+                if (!visited.contains(approver)) {
+                    visited.add(approver);
+                    queue.add(approver);
+                }
+            }
 
             // If tip, add to solidTips (populate)
             if (solidApprovers.isEmpty()) {
                 this.addTipHash(currentHash);
                 this.setSolid(currentHash);
-            }
-            
-            // Add solid approvers to queue
-            for (Hash approver : solidApprovers) {
-                if (!visited.contains(approver) && TransactionViewModel.fromHash(tangle, approver).isSolid()) {
-                    visited.add(approver);
-                    queue.add(approver);
-                }
             }
         } 
     }
