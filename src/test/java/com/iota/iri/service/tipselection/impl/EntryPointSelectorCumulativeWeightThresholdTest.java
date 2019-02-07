@@ -6,11 +6,14 @@ import static com.iota.iri.controllers.TransactionViewModelTest.getRandomTransac
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.Hash;
 import com.iota.iri.service.tipselection.EntryPointSelector;
 import com.iota.iri.service.tipselection.StartingTipSelector;
+import com.iota.iri.service.tipselection.TailFinder;
 import com.iota.iri.storage.Tangle;
 import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
 
@@ -28,6 +31,7 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
     private TemporaryFolder logFolder;
     private Tangle tangle;
     private StartingTipSelector startingTipSelector;
+    private TailFinder tailFinder;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -50,6 +54,10 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
         tangle.init();
 
         startingTipSelector = Mockito.mock(StartingTipSelector.class);
+        tailFinder = Mockito.mock(TailFinder.class);
+        // Default tailFinder mock behavior is to return the same transaction
+        Mockito.when(tailFinder.findTail(Mockito.any(Hash.class)))
+           .thenAnswer(tx -> Optional.of(tx.getArguments()[0]));
     }
 
     @Test
@@ -63,7 +71,8 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
         final int threshold = 50;
         Mockito.when(startingTipSelector.getTip()).thenReturn(transaction.getBundleHash());
         
-        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, threshold, startingTipSelector);
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, threshold,
+            startingTipSelector, tailFinder);
         Hash entryPoint = entryPointSelector.getEntryPoint();
 
         Assert.assertEquals(Hash.NULL_HASH, entryPoint);
@@ -91,7 +100,8 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
 
         Mockito.when(startingTipSelector.getTip()).thenReturn(transactions.get(transactions.size() - 1).getHash());
         
-        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, threshold, startingTipSelector);
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, threshold,
+            startingTipSelector, tailFinder);
         Hash entryPoint = entryPointSelector.getEntryPoint();
 
         Assert.assertNotEquals(Hash.NULL_HASH, entryPoint);
@@ -127,7 +137,8 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
 
         Mockito.when(startingTipSelector.getTip()).thenReturn(mainStalk.get(mainStalk.size() - 1).getHash());
         
-        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, threshold, startingTipSelector);
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, threshold,
+            startingTipSelector, tailFinder);
         Hash entryPoint = entryPointSelector.getEntryPoint();
 
         Assert.assertNotEquals(Hash.NULL_HASH, entryPoint);
@@ -158,7 +169,8 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
 
         Mockito.when(startingTipSelector.getTip()).thenReturn(shortChainTip);
         
-        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, threshold, startingTipSelector);
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, threshold,
+            startingTipSelector, tailFinder);
 
         exception.expect(IllegalStateException.class);
         entryPointSelector.getEntryPoint();
@@ -177,11 +189,46 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
         // Start from the short chain, so we start the BFS from the genesis
         Mockito.when(startingTipSelector.getTip()).thenReturn(shortChain.get(shortChain.size() - 1));
         
-        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, threshold, startingTipSelector);
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, threshold,
+            startingTipSelector, tailFinder);
 
         Hash entryPoint = entryPointSelector.getEntryPoint();
 
         Assert.assertEquals(Hash.NULL_HASH, entryPoint);
+    }
+
+    @Test
+    public void returnsTailRatherThanEndOfBacktrack() throws Exception {
+        final int threshold = 10;
+        final Hash tail = getRandomTransactionHash();
+
+        // getTip returns genesis
+        Mockito.when(startingTipSelector.getTip()).thenReturn(Hash.NULL_HASH);
+
+        // findTail returns the "tail"
+        Mockito.reset(tailFinder);
+        Mockito.when(tailFinder.findTail(Mockito.any(Hash.class)))
+            .thenReturn(Optional.of(tail));
+
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, threshold, startingTipSelector, tailFinder); Hash entryPoint = entryPointSelector.getEntryPoint(); 
+
+        Assert.assertEquals(tail, entryPoint);
+    }
+
+    @Test
+    public void throwsExceptionIfTailFinderFails() throws Exception {
+        final int threshold = 10;
+
+        // getTip returns genesis
+        Mockito.when(startingTipSelector.getTip()).thenReturn(Hash.NULL_HASH);
+
+        // findTail returns Optional.empty()
+        Mockito.reset(tailFinder);
+        Mockito.when(tailFinder.findTail(Mockito.any(Hash.class)))
+            .thenReturn(Optional.empty());
+
+        exception.expect(NoSuchElementException.class);
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, threshold, startingTipSelector, tailFinder); Hash entryPoint = entryPointSelector.getEntryPoint(); 
     }
 
     private List<Hash> makeChain(int length) throws Exception {

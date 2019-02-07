@@ -6,6 +6,7 @@ import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.Hash;
 import com.iota.iri.service.tipselection.EntryPointSelector;
 import com.iota.iri.service.tipselection.StartingTipSelector;
+import com.iota.iri.service.tipselection.TailFinder;
 import com.iota.iri.storage.Tangle;
 
 import org.apache.commons.lang3.NotImplementedException;
@@ -19,14 +20,17 @@ public class EntryPointSelectorCumulativeWeightThreshold implements EntryPointSe
     private final CumulativeWeightCalculator cumulativeWeightCalculator;
     private final StartingTipSelector startingTipSelector;
     private final int threshold;
+    private final TailFinder tailFinder;
 
     public static int MAX_SUBTANGLE_SIZE = 4 * CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE;
 
-    public EntryPointSelectorCumulativeWeightThreshold(Tangle tangle, int threshold, StartingTipSelector startingTipSelector) {
+    public EntryPointSelectorCumulativeWeightThreshold(Tangle tangle, int threshold,
+            StartingTipSelector startingTipSelector, TailFinder tailFinder) {
         this.tangle = tangle;
         this.cumulativeWeightCalculator = new CumulativeWeightCalculator(tangle);
         this.threshold = threshold;
         this.startingTipSelector = startingTipSelector;
+        this.tailFinder = tailFinder;
     }
 
     @Override
@@ -36,7 +40,8 @@ public class EntryPointSelectorCumulativeWeightThreshold implements EntryPointSe
 
     @Override
     public Hash getEntryPoint() throws Exception {
-        Hash entryPoint = backtrack(this.startingTipSelector.getTip(), threshold);
+        Hash entryBundle = backtrack(startingTipSelector.getTip(), threshold);
+        Hash entryPoint = tailFinder.findTail(entryBundle).get();
 
         int subtangleWeight = cumulativeWeightCalculator.calculateSingle(entryPoint);
         if (subtangleWeight > MAX_SUBTANGLE_SIZE) {

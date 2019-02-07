@@ -188,7 +188,7 @@ public class Iota {
         Walker walker = new WalkerAlpha(tailFinder, tangle, messageQ, new SecureRandom(), config);
         StartingTipSelector startingTipSelector = new ConnectedComponentsStartingTipSelector(tangle, CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE, tipsViewModel);
         EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(
-            tangle, CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE, startingTipSelector);
+            tangle, CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE, startingTipSelector, tailFinder);
         ReferenceChecker referenceChecker = new ReferenceCheckerImpl(tangle);
         return new TipSelectorImpl(tangle, ledgerValidator, entryPointSelector, ratingCalculator, walker, referenceChecker);
     }
