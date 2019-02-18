@@ -210,7 +210,8 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
         Mockito.when(tailFinder.findTail(Mockito.any(Hash.class)))
             .thenReturn(Optional.of(tail));
 
-        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, threshold, startingTipSelector, tailFinder); Hash entryPoint = entryPointSelector.getEntryPoint(); 
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, threshold, startingTipSelector, tailFinder);
+        Hash entryPoint = entryPointSelector.getEntryPoint(); 
 
         Assert.assertEquals(tail, entryPoint);
     }
@@ -228,7 +229,8 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
             .thenReturn(Optional.empty());
 
         exception.expect(NoSuchElementException.class);
-        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, threshold, startingTipSelector, tailFinder); Hash entryPoint = entryPointSelector.getEntryPoint(); 
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, threshold, startingTipSelector, tailFinder);
+        entryPointSelector.getEntryPoint(); 
     }
 
     private List<Hash> makeChain(int length) throws Exception {
