@@ -78,7 +78,11 @@ public class TipsViewModel {
         return result;
     }
 
-    public Hash getRandomSolidTipHash() throws Exception {
+    public Hash getRandomSolidTipHash() {
+        if (solidSize() == 0) {
+            return Hash.NULL_HASH;
+        }
+
         synchronized (sync) {
             int index = seed.nextInt(solidTips.size());
             Iterator<Hash> hashIterator;
