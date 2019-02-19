@@ -1,5 +1,8 @@
 package com.iota.iri.controllers;
 
+import com.iota.iri.model.Hash;
+import com.iota.iri.storage.Tangle;
+
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -9,9 +12,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
-
-import com.iota.iri.model.Hash;
-import com.iota.iri.storage.Tangle;
 
 public class TipsViewModel {
 
@@ -67,7 +67,12 @@ public class TipsViewModel {
         return hashes;
     }
 
-    public List<Hash> getLatestSolidTips(int count) {
+    public List<Hash> getLatestSolidTips(int count) throws Exception {
+        synchronized (sync) {
+            if (solidTips.size() == 0) {
+                populateSolidTips();
+            }
+        }
         List<Hash> result = new ArrayList<>();
         
         int i = 0;
@@ -80,11 +85,12 @@ public class TipsViewModel {
         return result;
     }
 
-    public Hash getRandomSolidTipHash() throws Exception {
+    public Hash getRandomSolidTipHash() {
+        if (solidSize() == 0) {
+            return Hash.NULL_HASH;
+        }
+
         synchronized (sync) {
-            if (solidTips.size() == 0) {
-                populateSolidTips();
-            }
             int index = seed.nextInt(solidTips.size());
             Iterator<Hash> hashIterator;
             hashIterator = solidTips.iterator();

@@ -1,10 +1,12 @@
 package com.iota.iri.controllers;
 
-import static com.iota.iri.controllers.TransactionViewModelTest.getRandomTransactionHash;
-import static com.iota.iri.controllers.TransactionViewModelTest.getRandomTransactionWithTrunkAndBranch;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import com.iota.iri.model.Hash;
+import com.iota.iri.storage.Tangle;
+import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -12,14 +14,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
-import com.iota.iri.model.Hash;
-import com.iota.iri.storage.Tangle;
-import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import static com.iota.iri.controllers.TransactionViewModelTest.getRandomTransactionHash;
+import static com.iota.iri.controllers.TransactionViewModelTest.getRandomTransactionWithTrunkAndBranch;
+import static org.junit.Assert.*;
 
 /**
  * Created by paul on 5/2/17.
@@ -174,10 +171,10 @@ public class TipsViewModelTest {
 
         TipsViewModel tipsVM = new TipsViewModel(tangle);
 
-        Hash tip = tipsVM.getRandomSolidTipHash();
+        List<Hash> solidTips = tipsVM.getLatestSolidTips(1);
 
-        assertNotNull(tip);
-        assertTrue(tips.contains(tip));
+        assertNotNull(solidTips);
+        assertTrue(tips.contains(solidTips.get(0)));
     }
 
     @Test
@@ -194,9 +191,9 @@ public class TipsViewModelTest {
 
         TipsViewModel tipsVM = new TipsViewModel(tangle);
 
-        Hash tip = tipsVM.getRandomSolidTipHash();
+        List<Hash> solidTips = tipsVM.getLatestSolidTips(1);
 
-        assertEquals(solidTip.getHash(), tip);
+        assertEquals(solidTip.getHash(), solidTips.get(0));
     }
 
     @Test
