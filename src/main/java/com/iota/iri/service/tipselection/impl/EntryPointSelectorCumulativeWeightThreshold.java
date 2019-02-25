@@ -22,7 +22,7 @@ public class EntryPointSelectorCumulativeWeightThreshold implements EntryPointSe
     private final int threshold;
     private final TailFinder tailFinder;
 
-    public static int MAX_SUBTANGLE_SIZE = 4 * CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE;
+    public static int MAX_SUBTANGLE_SIZE = 15 * CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE;
 
     public EntryPointSelectorCumulativeWeightThreshold(Tangle tangle, int threshold,
             StartingTipSelector startingTipSelector, TailFinder tailFinder) {
