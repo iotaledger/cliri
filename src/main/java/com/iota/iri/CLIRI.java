@@ -42,7 +42,7 @@ public class CLIRI {
 
     public static final String MAINNET_NAME = "CLIRI";
     public static final String TESTNET_NAME = "CLIRI Testnet";
-    public static final String VERSION = "0.2.0";
+    public static final String VERSION = "0.2.1";
 
     /**
      * The entry point of CLIRI.
