@@ -17,7 +17,7 @@ The IRI repository is the main IOTA Reference Implementation and the embodiment 
 
 This is a full-featured [[IOTA]](https://iota.org/) node with a convenient JSON-REST HTTP interface.
 It allows users to become part of the [[IOTA]](https://iota.org) network as both a transaction relay
-and network information provider through the easy-to-use [[API]](https://iota.readme.io/reference).
+and network information provider through the easy-to-use [[API]](https://docs.iota.org/docs/iri/0.1/references/api-reference).
 
 It is specially designed for users seeking a fast, efficient and fully-compatible network setup.
 
@@ -46,7 +46,7 @@ please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 # Documentation
 
-This page contains basic instructions for setting up an IRI node. You can find the full documentation on our [documentation website](https://docs.iota.org/iri). Also see the [IRI API refernece](https://iota.readme.io/reference). 
+This page contains basic instructions for setting up an IRI node. You can find the full documentation on our [documentation website](https://docs.iota.org/docs/iri/0.1/introduction/overview). Also see the [IRI API refernece](https://docs.iota.org/docs/iri/0.1/references/api-reference). 
 
 # Installing
 
