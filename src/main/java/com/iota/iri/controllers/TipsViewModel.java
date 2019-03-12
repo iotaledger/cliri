@@ -68,20 +68,19 @@ public class TipsViewModel {
     }
 
     public List<Hash> getLatestSolidTips(int count) throws Exception {
+        List<Hash> result = new ArrayList<>();
         synchronized (sync) {
             if (solidTips.size() == 0) {
                 populateSolidTips();
             }
-        }
-        List<Hash> result = new ArrayList<>();
-        
-        int i = 0;
-        Iterator<Hash> hashIterator = solidTips.descendingIterator();
-        while (hashIterator.hasNext() && i < count) {
-            result.add(hashIterator.next());
-            i++;
-        }
 
+            int i = 0;
+            Iterator<Hash> hashIterator = solidTips.descendingIterator();
+            while (hashIterator.hasNext() && i < count) {
+                result.add(hashIterator.next());
+                i++;
+            }
+        }
         return result;
     }
 
