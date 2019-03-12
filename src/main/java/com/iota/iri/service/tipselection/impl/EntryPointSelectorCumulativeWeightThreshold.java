@@ -107,7 +107,7 @@ public class EntryPointSelectorCumulativeWeightThreshold implements EntryPointSe
         path.add(currentHash);
 
         while (i < steps && !isGenesis(currentHash)) {
-            currentHash = random.nextInt() % 2 == 0 ?
+            currentHash = random.nextBoolean() ?
                 TransactionViewModel.fromHash(tangle, currentHash).getTrunkTransactionHash() :
                 TransactionViewModel.fromHash(tangle, currentHash).getBranchTransactionHash();
             
