@@ -1,5 +1,7 @@
 package com.iota.iri.service.tipselection.impl;
 
+import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Objects;
 
 import com.iota.iri.controllers.TransactionViewModel;
@@ -21,6 +23,7 @@ public class EntryPointSelectorCumulativeWeightThreshold implements EntryPointSe
     private final StartingTipSelector startingTipSelector;
     private final int threshold;
     private final TailFinder tailFinder;
+    private final SecureRandom random = new SecureRandom();
 
     public static int MAX_SUBTANGLE_SIZE = 15 * CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE;
 
@@ -65,26 +68,54 @@ public class EntryPointSelectorCumulativeWeightThreshold implements EntryPointSe
         int currentWeight = 1;
         int stepSize = 1;
 
+        ArrayList<Hash> path = new ArrayList<>();
+        path.add(currentHash);
+
         // Backtrack as long as the genesis hasn't been reached and the threshold has not been crossed
         while (currentWeight < threshold && !isGenesis(currentHash)) {
-            currentHash = nStepsBack(currentHash, stepSize);
+            path = nStepsBack(currentHash, stepSize);
+            currentHash = path.get(path.size() - 1);
             currentWeight = cumulativeWeightCalculator.calculateSingle(currentHash);
             stepSize *= 2;
         }
 
-        return currentHash;
+        return binarySearch(path, threshold);
+    }
+    
+    private Hash binarySearch(ArrayList<Hash> path, int threshold) throws Exception {
+        int left = 0;
+        int right = path.size() - 1;
+        while (left < right) {
+            int middle = (right + left) / 2;
+            int weight = cumulativeWeightCalculator.calculateSingle(path.get(middle));
+
+            if (weight < threshold) {
+                left = middle + 1;
+            } else {
+                right = middle;
+            }
+        }
+
+        return path.get(right);
     }
 
-    private Hash nStepsBack(Hash from, int steps) throws Exception {
+    private ArrayList<Hash> nStepsBack(Hash from, int steps) throws Exception {
         Hash currentHash = from;
         int i = 0;
 
+        ArrayList<Hash> path = new ArrayList<>();
+        path.add(currentHash);
+
         while (i < steps && !isGenesis(currentHash)) {
-            currentHash = TransactionViewModel.fromHash(tangle, currentHash).getTrunkTransactionHash();
+            currentHash = random.nextInt() % 2 == 0 ?
+                TransactionViewModel.fromHash(tangle, currentHash).getTrunkTransactionHash() :
+                TransactionViewModel.fromHash(tangle, currentHash).getBranchTransactionHash();
+            
+            path.add(currentHash);
             i++;
         }
 
-        return currentHash;
+        return path;
     }
 
     private static boolean isGenesis(Hash transaction) {
