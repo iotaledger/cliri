@@ -1,3 +1,5 @@
+ENV DOCKER_IRI_JAR_PATH "/iri/target/cliri*.jar"
+
 FROM iotacafe/maven:3.5.4.oracle8u181.1.webupd8.1.1-1 as local_stage_build
 MAINTAINER giorgio@iota.org
 
@@ -13,7 +15,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         jq curl socat \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=local_stage_build /iri/target/iri*.jar /iri/target/
+COPY --from=local_stage_build $DOCKER_IRI_JAR_PATH /iri/target/
 COPY docker/entrypoint.sh /
 
 # Java related options. Defaults set as below
@@ -22,7 +24,6 @@ ENV JAVA_MIN_MEMORY 2G
 ENV JAVA_MAX_MEMORY 4G
 
 # Additional custom variables. See DOCKER.md for details
-ENV DOCKER_IRI_JAR_PATH "/iri/target/iri*.jar"
 ENV DOCKER_IRI_REMOTE_LIMIT_API "interruptAttachToTangle, attachToTangle, addNeighbors, removeNeighbors, getNeighbors"
 
 # Setting this to 1 will have socat exposing 14266 and pointing it on
