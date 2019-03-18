@@ -10,6 +10,6 @@ exec java \
   -Xms$JAVA_MIN_MEMORY \
   -Xmx$JAVA_MAX_MEMORY \
   -Djava.net.preferIPv4Stack=true \
-  -jar $DOCKER_IRI_JAR_PATH \
+  -jar iri.jar \
   --remote --remote-limit-api "$DOCKER_IRI_REMOTE_LIMIT_API" \
   "$@"
