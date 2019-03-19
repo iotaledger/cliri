@@ -3,8 +3,8 @@ ARG IRITYPE=cliri
 FROM iotacafe/maven:3.5.4.oracle8u181.1.webupd8.1.1-1 as local_stage_build
 MAINTAINER giorgio@iota.org
 ARG IRITYPE
-RUN git clone https://github.com/iotaledger/${IRITYPE}.git
 WORKDIR /${IRITYPE}
+COPY . /${IRITYPE}
 RUN mvn clean package
 
 # execution image
