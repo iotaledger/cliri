@@ -233,6 +233,10 @@ public class TransactionViewModel {
         return transaction.arrivalTime;
     }
 
+    public void setSolidificationTime(long time) {
+        transaction.solidificationTime = time;
+    }
+
     public long getSolidificationTime() {
         return transaction.solidificationTime;
     }
@@ -397,7 +401,7 @@ public class TransactionViewModel {
     public boolean updateSolid(boolean solid) throws Exception {
         if(solid != transaction.solid) {
             transaction.solid = solid;
-            transaction.solidificationTime = System.currentTimeMillis();
+            setSolidificationTime(System.currentTimeMillis());
             return true;
         }
         return false;
