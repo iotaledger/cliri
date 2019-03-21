@@ -283,6 +283,30 @@ public class TransactionViewModelTest {
     }
 
     @Test
+    public void solidificationTimestampSetWhenCallingUpdateSolid() throws Exception {
+        TransactionViewModel tvm = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(Hash.NULL_HASH,
+                Hash.NULL_HASH), getRandomTransactionHash());
+
+        long now = System.currentTimeMillis();
+        tvm.updateSolid(true);
+
+        long timeDifference = Math.abs(tvm.getSolidificationTime() - now);
+        log.info("timeDifference", timeDifference);
+
+        assertTrue(timeDifference < 10);
+    }
+
+    @Test
+    public void solidificationTimestampNotSetWhenCallingUpdateSolidWithFalse() throws Exception {
+        TransactionViewModel tvm = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(Hash.NULL_HASH,
+                Hash.NULL_HASH), getRandomTransactionHash());
+
+        tvm.updateSolid(false);
+
+        assertEquals(0, tvm.getSolidificationTime());
+    }
+
+    @Test
     public void updateHeightShouldWork() throws Exception {
         int count = 4;
         TransactionViewModel[] transactionViewModels = new TransactionViewModel[count];
