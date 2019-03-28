@@ -16,6 +16,8 @@ import com.iota.iri.service.tipselection.impl.*;
 import com.iota.iri.storage.*;
 import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
 import com.iota.iri.utils.Pair;
+import com.iota.iri.utils.dag.RecentTransactionsGetter;
+import com.iota.iri.utils.dag.impl.RecentTransactionsGetterImpl;
 import com.iota.iri.zmq.MessageQ;
 
 import java.security.SecureRandom;
@@ -186,7 +188,8 @@ public class Iota {
         RatingCalculator ratingCalculator = new CumulativeWeightCalculator(tangle);
         TailFinder tailFinder = new TailFinderImpl(tangle);
         Walker walker = new WalkerAlpha(tailFinder, tangle, messageQ, new SecureRandom(), config);
-        StartingTipSelector startingTipSelector = new ConnectedComponentsStartingTipSelector(tangle, CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE, tipsViewModel);
+        RecentTransactionsGetter recentTransactionsGetter = new RecentTransactionsGetterImpl(tipsViewModel, tangle);
+        StartingTipSelector startingTipSelector = new ConnectedComponentsStartingTipSelector(tangle, CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE, recentTransactionsGetter);
         EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(
             tangle, CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE, startingTipSelector, tailFinder);
         ReferenceChecker referenceChecker = new ReferenceCheckerImpl(tangle);
