@@ -813,11 +813,12 @@ public class API {
     }
 
     /**
-      * Returns information about this node.
-      *
-      * @return {@link com.iota.iri.service.dto.GetNodeInfoResponse}
-      **/
-    private AbstractResponse getNodeInfoStatement(){
+     * Returns information about this node.
+     *
+     * @return {@link com.iota.iri.service.dto.GetNodeInfoResponse}
+     * @throws Exception
+     **/
+    private AbstractResponse getNodeInfoStatement() throws Exception {
         String name = instance.configuration.isTestnet() ? CLIRI.TESTNET_NAME : CLIRI.MAINNET_NAME;
         return GetNodeInfoResponse.create(name, CLIRI.VERSION,
                 Runtime.getRuntime().availableProcessors(),
@@ -830,7 +831,8 @@ public class API {
                 System.currentTimeMillis(), 
                 instance.tipsViewModel.size(),
                 instance.transactionRequester.numberOfTransactionsToRequest(),
-                features
+                features,
+                instance.lagCalculator.getMedianArrivalLag()
         );
     }
 
