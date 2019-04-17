@@ -48,7 +48,7 @@ public class LagCalculatorTest {
     }
 
     @Test
-    public void ReturnsNegativeResultWhenThereAreZeroRecentTransactions() throws Exception {
+    public void returnsNegativeResultWhenThereAreZeroRecentTransactions() throws Exception {
         Collection<Hash> emptyList = new ArrayList<Hash>();
         Mockito.when(recentTransactionsGetter.getRecentTransactions(Mockito.anyInt()))
             .thenReturn(emptyList);
@@ -60,7 +60,7 @@ public class LagCalculatorTest {
     }
 
     @Test
-    public void ReturnsCorrectMedianForSingleTx() throws Exception {
+    public void returnsCorrectMedianForSingleTx() throws Exception {
         long arrivalTime = 6;
         long attachmentTime = 3;
 
@@ -78,7 +78,7 @@ public class LagCalculatorTest {
     }
 
     @Test
-    public void ReturnsCorrectMedianForThreeTransactions() throws Exception {
+    public void returnsCorrectMedianForThreeTransactions() throws Exception {
         long[] arrivalTimes    = {1, 2, 3};
         long[] attachmentTimes = {0, 2, 5};
 
@@ -100,7 +100,7 @@ public class LagCalculatorTest {
     }
 
     @Test
-    public void ReturnsCorrectMedianForFourTransactions() throws Exception {
+    public void returnsCorrectMedianForFourTransactions() throws Exception {
         long[] arrivalTimes    = {2, 4, 6, 8};
         long[] attachmentTimes = {0, 0, 0, 0};
 
