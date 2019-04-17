@@ -185,13 +185,13 @@ public class ConnectedComponentsStartingTipSelectorTest {
         Assert.assertTrue(hairOnChainTransactions.contains(selectedTip));
     }
 
-    private List<Hash> makeChain(int length, Hash tip, long startArrivalTime) throws Exception {
+    private List<Hash> makeChain(int length, Hash tip, long startSolidificationTime) throws Exception {
         List<Hash> chain = new ArrayList<>();
 
         for (int i = 0; i < length; i++) {
             TransactionViewModel newTip = new TransactionViewModel(
                     getRandomTransactionWithTrunkAndBranch(tip, tip), getRandomTransactionHash());
-            newTip.setArrivalTime(startArrivalTime++);
+            newTip.setSolidificationTime(startSolidificationTime++);
             newTip.store(tangle);
             tip = newTip.getHash();
             chain.add(tip);
@@ -200,13 +200,13 @@ public class ConnectedComponentsStartingTipSelectorTest {
         return chain;
     }
 
-    private List<Hash> makeStar(int length, Hash tip, long startArrivalTime) throws Exception {
+    private List<Hash> makeStar(int length, Hash tip, long startSolidificationTime) throws Exception {
         List<Hash> star = new ArrayList<>();
 
         for (int i = 0; i < length; i++) {
             TransactionViewModel newTip = new TransactionViewModel(
                     getRandomTransactionWithTrunkAndBranch(tip, tip), getRandomTransactionHash());
-            newTip.setArrivalTime(startArrivalTime++);
+            newTip.setSolidificationTime(startSolidificationTime++);
             newTip.store(tangle);
             star.add(newTip.getHash());
         }

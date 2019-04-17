@@ -82,7 +82,7 @@ public class ConnectedComponentsStartingTipSelector implements StartingTipSelect
 
         //using a max heap sorted by arrivalTime.
         Queue<TransactionViewModel> queue = new PriorityQueue<>(maxTransactions,
-                Comparator.comparingLong(a -> (-1) * a.getArrivalTime()));
+                Comparator.comparingLong(a -> (-1) * a.getSolidificationTime()));
         Set<Hash> visited = new HashSet<>(maxTransactions);
 
         //the heap is initialized with the tips.

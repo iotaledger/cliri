@@ -103,6 +103,7 @@ public class TransactionViewModel {
 
             transaction.validity = 0;
             transaction.arrivalTime = 0;
+            transaction.solidificationTime = 0;
         } else {
             transaction.bytes = new byte[SIZE];
             System.arraycopy(trits, 0, transaction.bytes, 0, SIZE);
@@ -227,9 +228,17 @@ public class TransactionViewModel {
     public void setArrivalTime(long time) {
         transaction.arrivalTime = time;
     }
-
+    
     public long getArrivalTime() {
         return transaction.arrivalTime;
+    }
+
+    public void setSolidificationTime(long time) {
+        transaction.solidificationTime = time;
+    }
+
+    public long getSolidificationTime() {
+        return transaction.solidificationTime;
     }
 
     public byte[] getBytes() {
@@ -392,6 +401,7 @@ public class TransactionViewModel {
     public boolean updateSolid(boolean solid) throws Exception {
         if(solid != transaction.solid) {
             transaction.solid = solid;
+            setSolidificationTime(System.currentTimeMillis());
             return true;
         }
         return false;
