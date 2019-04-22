@@ -36,7 +36,7 @@ public class LagCalculator {
           
           Arrays.sort(lags);
 
-          int middle = lags.length/2;
+          int middle = lags.length / 2;
           long median = lags.length % 2 == 1 ?
               lags[middle] :
               (lags[middle-1] + lags[middle]) / 2;

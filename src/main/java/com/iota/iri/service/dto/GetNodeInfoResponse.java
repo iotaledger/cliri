@@ -111,8 +111,8 @@ public class GetNodeInfoResponse extends AbstractResponse {
 	public static AbstractResponse create(String appName, String appVersion, int jreAvailableProcessors, long jreFreeMemory,
 								  String jreVersion, long maxMemory, long totalMemory,
 								  int neighbors, int packetsQueueSize, long currentTimeMillis, int tips,
-                                  int numberOfTransactionsToRequest, String[] features,
-                                  long medianArrivalLag) {
+								  int numberOfTransactionsToRequest, String[] features,
+								  long medianArrivalLag) {
 		final GetNodeInfoResponse res = new GetNodeInfoResponse();
 		res.appName = appName;
 		res.appVersion = appVersion;
@@ -129,8 +129,8 @@ public class GetNodeInfoResponse extends AbstractResponse {
 		res.tips = tips;
 		res.transactionsToRequest = numberOfTransactionsToRequest;
 		
-        res.features = features;
-        res.medianArrivalLag = medianArrivalLag;
+		res.features = features;
+		res.medianArrivalLag = medianArrivalLag;
 		return res;
 	}
 
