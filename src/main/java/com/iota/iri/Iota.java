@@ -9,6 +9,7 @@ import com.iota.iri.network.TransactionRequester;
 import com.iota.iri.network.UDPReceiver;
 import com.iota.iri.network.replicator.Replicator;
 import com.iota.iri.service.TipsSolidifier;
+import com.iota.iri.service.stats.LagCalculator;
 import com.iota.iri.service.stats.TransactionStatsPublisher;
 import com.iota.iri.service.DatabaseRecycler;
 import com.iota.iri.service.tipselection.*;
@@ -16,6 +17,8 @@ import com.iota.iri.service.tipselection.impl.*;
 import com.iota.iri.storage.*;
 import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
 import com.iota.iri.utils.Pair;
+import com.iota.iri.utils.dag.RecentTransactionsGetter;
+import com.iota.iri.utils.dag.impl.RecentTransactionsGetterImpl;
 import com.iota.iri.zmq.MessageQ;
 
 import java.security.SecureRandom;
@@ -74,6 +77,9 @@ public class Iota {
     public final MessageQ messageQ;
     public final TipSelector tipsSelector;
     public final DatabaseRecycler databaseRecycler;
+    public final LagCalculator lagCalculator;
+
+    public final int lagCalculatorTransactionCount = 100;
 
     /**
      * Creates all services needed to run an IOTA node.
@@ -96,6 +102,8 @@ public class Iota {
         tipsSelector = createTipSelector(configuration);
         transactionStatsPublisher = new TransactionStatsPublisher(tangle, tipsViewModel, tipsSelector, messageQ);
         databaseRecycler = new DatabaseRecycler(transactionValidator, transactionRequester, tipsViewModel, tangle);
+        RecentTransactionsGetter recentTransactionsGetter = new RecentTransactionsGetterImpl(tipsViewModel, tangle);
+        lagCalculator = new LagCalculator(lagCalculatorTransactionCount, tangle, recentTransactionsGetter);
     }
 
     /**
@@ -186,7 +194,8 @@ public class Iota {
         RatingCalculator ratingCalculator = new CumulativeWeightCalculator(tangle);
         TailFinder tailFinder = new TailFinderImpl(tangle);
         Walker walker = new WalkerAlpha(tailFinder, tangle, messageQ, new SecureRandom(), config);
-        StartingTipSelector startingTipSelector = new ConnectedComponentsStartingTipSelector(tangle, CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE, tipsViewModel);
+        RecentTransactionsGetter recentTransactionsGetter = new RecentTransactionsGetterImpl(tipsViewModel, tangle);
+        StartingTipSelector startingTipSelector = new ConnectedComponentsStartingTipSelector(tangle, CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE, recentTransactionsGetter);
         EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(
             tangle, CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE, startingTipSelector, tailFinder);
         ReferenceChecker referenceChecker = new ReferenceCheckerImpl(tangle);

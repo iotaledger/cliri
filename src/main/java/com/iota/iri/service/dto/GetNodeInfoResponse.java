@@ -84,6 +84,12 @@ public class GetNodeInfoResponse extends AbstractResponse {
     private String[] features;
 
     /**
+     * medianArrivalLag is the median of the calculated difference between attachmentTimestamp and arrivalTimestamp,
+     * among recent transactions.
+     */
+    private long medianArrivalLag;
+
+    /**
      * Creates a new {@link GetNodeInfoResponse}
      * 
      * @param appName {@link #appName}
@@ -99,12 +105,14 @@ public class GetNodeInfoResponse extends AbstractResponse {
      * @param tips {@link #tips}
      * @param numberOfTransactionsToRequest {@link #transactionsToRequest}
      * @param features {@link #features}
+     * @param medianArrivalLag {@link #medianArrivalLag}
      * @return a {@link GetNodeInfoResponse} filled with all the provided parameters
      */
 	public static AbstractResponse create(String appName, String appVersion, int jreAvailableProcessors, long jreFreeMemory,
 								  String jreVersion, long maxMemory, long totalMemory,
 								  int neighbors, int packetsQueueSize, long currentTimeMillis, int tips,
-								  int numberOfTransactionsToRequest, String[] features) {
+								  int numberOfTransactionsToRequest, String[] features,
+								  long medianArrivalLag) {
 		final GetNodeInfoResponse res = new GetNodeInfoResponse();
 		res.appName = appName;
 		res.appVersion = appVersion;
@@ -122,6 +130,7 @@ public class GetNodeInfoResponse extends AbstractResponse {
 		res.transactionsToRequest = numberOfTransactionsToRequest;
 		
 		res.features = features;
+		res.medianArrivalLag = medianArrivalLag;
 		return res;
 	}
 
@@ -227,5 +236,13 @@ public class GetNodeInfoResponse extends AbstractResponse {
 	 */
 	public String[] getFeatures() {
 	    return features;
+    }
+
+	/**
+	 * 
+	 * @return {@link #medianArrivalLag}
+	 */
+	public long getMedianArrivalLag() {
+	    return medianArrivalLag;
 	}
 }
