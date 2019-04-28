@@ -89,18 +89,11 @@ java -jar iri.jar -p 14265
 
 ### Docker
 
-#### Building the image
+Create an iota.ini file with all of your configuration variables set in it.
+Any that you don't provide in here will be assumed to be default or taken from
+command line arguments.
 
-Building the image is straight forward. While inside the cliri-repository folder simply run
-
-`docker build -t iotaledger/cliri:latest .`
-
-#### Starting a container
-
-Create an iota.ini file (for example in your home directory) with all of your configuration variables set in it.
-Any that you don't provide in here will be assumed to be default or taken from command line arguments. This iota.ini will be mounted as /iota.ini inside the container and will automatically be loaded by cliri once started.
-
-`docker run --name iota-node -v ~/iota.ini:/iota.ini iotaledger/cliri:latest`
+`docker run -d --net=host --name iota-node -v iota.ini:/iri/iota.ini iotaledger/iri:latest`
 
 ### Command Line Options 
 
