@@ -4,11 +4,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
-/**
- * Created by paul on 5/2/17.
- */
 public class TagViewModelTest {
     @Before
     public void setUp() throws Exception {

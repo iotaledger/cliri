@@ -1,47 +1,56 @@
 package com.iota.iri.service.tipselection.impl;
 
-import com.iota.iri.LedgerValidator;
 import com.iota.iri.TransactionTestUtils;
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.Hash;
+import com.iota.iri.service.ledger.LedgerService;
+import com.iota.iri.service.snapshot.SnapshotProvider;
 import com.iota.iri.storage.Tangle;
 import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
 
 import java.util.HashMap;
 import java.util.HashSet;
 
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
-
-@RunWith(MockitoJUnitRunner.class)
 public class WalkValidatorImplTest {
+    
+    @Rule 
+    public MockitoRule mockitoRule = MockitoJUnit.rule();
 
     private static final TemporaryFolder dbFolder = new TemporaryFolder();
     private static final TemporaryFolder logFolder = new TemporaryFolder();
     private static Tangle tangle;
+    private static SnapshotProvider snapshotProvider;
+    
     @Mock
-    private LedgerValidator ledgerValidator;
+    private static LedgerService ledgerService;
 
     @AfterClass
     public static void tearDown() throws Exception {
         tangle.shutdown();
+        snapshotProvider.shutdown();
         dbFolder.delete();
+        logFolder.delete();
     }
 
     @BeforeClass
     public static void setUp() throws Exception {
         tangle = new Tangle();
+        snapshotProvider = Mockito.mock(SnapshotProvider.class);
         dbFolder.create();
         logFolder.create();
-        tangle.addPersistenceProvider(new RocksDBPersistenceProvider(dbFolder.getRoot().getAbsolutePath(), logFolder
-                .getRoot().getAbsolutePath(), 1000));
+        tangle.addPersistenceProvider( new RocksDBPersistenceProvider(
+                dbFolder.getRoot().getAbsolutePath(), logFolder.getRoot().getAbsolutePath(),1000,
+                Tangle.COLUMN_FAMILIES, Tangle.METADATA_COLUMN_FAMILY));
         tangle.init();
     }
 
@@ -51,10 +60,10 @@ public class WalkValidatorImplTest {
         tx.updateSolid(true);
         tx.store(tangle);
         Hash hash = tx.getHash();
-        Mockito.when(ledgerValidator.updateDiff(new HashSet<>(), new HashMap<>(), hash))
+        Mockito.when(ledgerService.isBalanceDiffConsistent(new HashSet<>(), new HashMap<>(), hash))
                 .thenReturn(true);
 
-        WalkValidatorImpl walkValidator = new WalkValidatorImpl(tangle, ledgerValidator);
+        WalkValidatorImpl walkValidator = new WalkValidatorImpl(tangle, ledgerService);
         Assert.assertTrue("Validation failed", walkValidator.isValid(hash));
     }
 
@@ -64,10 +73,10 @@ public class WalkValidatorImplTest {
         tx.store(tangle);
         Hash hash = tx.getTrunkTransactionHash();
         tx.updateSolid(true);
-        Mockito.when(ledgerValidator.updateDiff(new HashSet<>(), new HashMap<>(), hash))
+        Mockito.when(ledgerService.isBalanceDiffConsistent(new HashSet<>(), new HashMap<>(), hash))
                 .thenReturn(true);
 
-        WalkValidatorImpl walkValidator = new WalkValidatorImpl(tangle, ledgerValidator);
+        WalkValidatorImpl walkValidator = new WalkValidatorImpl(tangle, ledgerService);
         Assert.assertFalse("Validation succeded but should have failed since tx is missing", walkValidator.isValid(hash));
     }
 
@@ -77,10 +86,10 @@ public class WalkValidatorImplTest {
         tx.store(tangle);
         Hash hash = tx.getHash();
         tx.updateSolid(true);
-        Mockito.when(ledgerValidator.updateDiff(new HashSet<>(), new HashMap<>(), hash))
+        Mockito.when(ledgerService.isBalanceDiffConsistent(new HashSet<>(), new HashMap<>(), hash))
                 .thenReturn(true);
 
-        WalkValidatorImpl walkValidator = new WalkValidatorImpl(tangle, ledgerValidator);
+        WalkValidatorImpl walkValidator = new WalkValidatorImpl(tangle, ledgerService);
         Assert.assertFalse("Validation succeded but should have failed since we are not on a tail", walkValidator.isValid(hash));
     }
 
@@ -90,10 +99,10 @@ public class WalkValidatorImplTest {
         tx.store(tangle);
         Hash hash = tx.getHash();
         tx.updateSolid(false);
-        Mockito.when(ledgerValidator.updateDiff(new HashSet<>(), new HashMap<>(), hash))
+        Mockito.when(ledgerService.isBalanceDiffConsistent(new HashSet<>(), new HashMap<>(), hash))
                 .thenReturn(true);
-        
-        WalkValidatorImpl walkValidator = new WalkValidatorImpl(tangle, ledgerValidator);
+
+        WalkValidatorImpl walkValidator = new WalkValidatorImpl(tangle, ledgerService);
         Assert.assertFalse("Validation succeded but should have failed since tx is not solid",
                 walkValidator.isValid(hash));
     }
@@ -104,11 +113,11 @@ public class WalkValidatorImplTest {
         tx.store(tangle);
         Hash hash = tx.getHash();
         tx.updateSolid(true);
-        Mockito.when(ledgerValidator.updateDiff(new HashSet<>(), new HashMap<>(), hash))
+        Mockito.when(ledgerService.isBalanceDiffConsistent(new HashSet<>(), new HashMap<>(), hash))
                 .thenReturn(false);
-        WalkValidatorImpl walkValidator = new WalkValidatorImpl(tangle, ledgerValidator);
+
+        WalkValidatorImpl walkValidator = new WalkValidatorImpl(tangle, ledgerService);
         Assert.assertFalse("Validation succeded but should have failed due to inconsistent ledger state",
                 walkValidator.isValid(hash));
     }
-
 }

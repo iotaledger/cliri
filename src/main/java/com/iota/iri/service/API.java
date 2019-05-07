@@ -1,13 +1,13 @@
 package com.iota.iri.service;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 import com.iota.iri.CLIRI;
 import com.iota.iri.IXI;
 import com.iota.iri.Iota;
 import com.iota.iri.conf.APIConfig;
-import com.iota.iri.controllers.AddressViewModel;
-import com.iota.iri.controllers.BundleViewModel;
-import com.iota.iri.controllers.TagViewModel;
-import com.iota.iri.controllers.TransactionViewModel;
+import com.iota.iri.controllers.*;
 import com.iota.iri.crypto.Curl;
 import com.iota.iri.crypto.PearlDiver;
 import com.iota.iri.crypto.Sponge;
@@ -20,7 +20,26 @@ import com.iota.iri.service.dto.*;
 import com.iota.iri.service.tipselection.TipSelector;
 import com.iota.iri.utils.Converter;
 import com.iota.iri.utils.IotaIOUtils;
+import com.iota.iri.utils.IotaUtils;
 import com.iota.iri.utils.MapIdentityManager;
+import io.undertow.Undertow;
+import io.undertow.security.api.AuthenticationMechanism;
+import io.undertow.security.api.AuthenticationMode;
+import io.undertow.security.handlers.AuthenticationCallHandler;
+import io.undertow.security.handlers.AuthenticationConstraintHandler;
+import io.undertow.security.handlers.AuthenticationMechanismsHandler;
+import io.undertow.security.handlers.SecurityInitialHandler;
+import io.undertow.security.idm.IdentityManager;
+import io.undertow.security.impl.BasicAuthenticationMechanism;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.*;
+import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.xnio.channels.StreamSinkChannel;
+import org.xnio.streams.ChannelInputStream;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -36,30 +55,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
-import org.apache.commons.lang3.NotImplementedException;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xnio.channels.StreamSinkChannel;
-import org.xnio.streams.ChannelInputStream;
-
-import io.undertow.Undertow;
-import io.undertow.security.api.AuthenticationMechanism;
-import io.undertow.security.api.AuthenticationMode;
-import io.undertow.security.handlers.AuthenticationCallHandler;
-import io.undertow.security.handlers.AuthenticationConstraintHandler;
-import io.undertow.security.handlers.AuthenticationMechanismsHandler;
-import io.undertow.security.handlers.SecurityInitialHandler;
-import io.undertow.security.idm.IdentityManager;
-import io.undertow.security.impl.BasicAuthenticationMechanism;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.RequestLimitingHandler;
-import io.undertow.util.*;
 
 import static io.undertow.Handlers.path;
 
@@ -94,6 +89,7 @@ public class API {
     private Undertow server;
 
     private final Gson gson = new GsonBuilder().create();
+    private volatile PearlDiver pearlDiver = new PearlDiver();
 
     private final AtomicInteger counter = new AtomicInteger(0);
 
@@ -103,6 +99,11 @@ public class API {
     private final static int TRYTES_SIZE = 2673;
 
     private final static long MAX_TIMESTAMP_VALUE = (long) (Math.pow(3, 27) - 1) / 2; // max positive 27-trits value
+
+    private static int counterGetTxToApprove = 0;
+    private static long ellapsedTime_getTxToApprove = 0L;
+    private static int counter_PoW = 0;
+    private static long ellapsedTime_PoW = 0L;
 
     private final int maxFindTxs;
     private final int maxRequestList;
@@ -163,39 +164,28 @@ public class API {
      *        Starts the server, opening it for HTTP API requests
      *    </li>
      * </ol>
-     * 
-     * @throws IOException If we are not on the testnet, and the previousEpochsSpentAddresses files cannot be found. 
-     *                     Currently this exception is caught in {@link #readPreviousEpochsSpentAddresses(boolean)}
      */
     public void init() throws IOException {
-
         APIConfig configuration = instance.configuration;
         final int apiPort = configuration.getPort();
         final String apiHost = configuration.getApiHost();
 
         log.debug("Binding JSON-REST API Undertow server on {}:{}", apiHost, apiPort);
 
-        //amount of concurrent requests, equests beyond the limit will block until the previous request is complete.
-        //http://undertow.io/undertow-docs/undertow-docs-1.2.0/listeners.html
-        int numberOfWorkerThreads = Runtime.getRuntime().availableProcessors() * 10;
-        
-        server = Undertow.builder().addHttpListener(apiPort, apiHost).setHandler(path().addPrefixPath("/",
-                addSecurity(new RequestLimitingHandler(numberOfWorkerThreads, new HttpHandler() {
-
+        server = Undertow.builder().addHttpListener(apiPort, apiHost)
+                .setHandler(path().addPrefixPath("/", addSecurity(new HttpHandler() {
                     @Override
                     public void handleRequest(final HttpServerExchange exchange) throws Exception {
                         HttpString requestMethod = exchange.getRequestMethod();
                         if (Methods.OPTIONS.equals(requestMethod)) {
                             String allowedMethods = "GET,HEAD,POST,PUT,DELETE,TRACE,OPTIONS,CONNECT,PATCH";
-                            // return list of allowed methods in response headers
+                            //return list of allowed methods in response headers
                             exchange.setStatusCode(StatusCodes.OK);
-                            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE,
-                                    MimeMappings.DEFAULT_MIME_MAPPINGS.get("txt"));
+                            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, MimeMappings.DEFAULT_MIME_MAPPINGS.get("txt"));
                             exchange.getResponseHeaders().put(Headers.CONTENT_LENGTH, 0);
                             exchange.getResponseHeaders().put(Headers.ALLOW, allowedMethods);
                             exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Origin"), "*");
-                            exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Headers"),
-                                    "Origin, X-Requested-With, Content-Type, Accept, X-IOTA-API-Version");
+                            exchange.getResponseHeaders().put(new HttpString("Access-Control-Allow-Headers"), "User-Agent, Origin, X-Requested-With, Content-Type, Accept, X-IOTA-API-Version");
                             exchange.getResponseSender().close();
                             return;
                         }
@@ -206,7 +196,7 @@ public class API {
                         }
                         processRequest(exchange);
                     }
-                })))).build();
+                }))).build();
         server.start();
     }
 
@@ -290,7 +280,7 @@ public class API {
 
         final long beginningTime = System.currentTimeMillis();
         final String body = IotaIOUtils.toString(cis, StandardCharsets.UTF_8);
-        final AbstractResponse response;
+        AbstractResponse response;
 
         if (!exchange.getRequestHeaders().contains("X-IOTA-API-Version")) {
             response = ErrorResponse.create("Invalid API Version");
@@ -339,9 +329,15 @@ public class API {
 
         try {
             // Request JSON data into map
-            final Map<String, Object> request = gson.fromJson(requestString, Map.class);
+            Map<String, Object> request;
+            try {
+                request = gson.fromJson(requestString, Map.class);
+            }
+            catch(JsonSyntaxException jsonSyntaxException) {
+                return ErrorResponse.create("Invalid JSON syntax: " + jsonSyntaxException.getMessage());
+            }
             if (request == null) {
-                return ExceptionResponse.create("Invalid request payload: '" + requestString + "'");
+                return ErrorResponse.create("Invalid request payload: '" + requestString + "'");
             }
 
             // Did the requester ask for a command?
@@ -353,7 +349,7 @@ public class API {
             // Is this command allowed to be run from this request address? 
             // We check the remote limit API configuration.
             if (instance.configuration.getRemoteLimitApi().contains(command) &&
-                    !sourceAddress.getAddress().isLoopbackAddress()) {
+                    !instance.configuration.getRemoteTrustedApiHosts().contains(sourceAddress.getAddress())) {
                 return AccessLimitedResponse.create("COMMAND " + command + " is not available on this node");
             }
 
@@ -419,6 +415,9 @@ public class API {
                 }
                 case "getNodeInfo": {
                     return getNodeInfoStatement();
+                }
+                case "getNodeAPIConfiguration": {
+                    return getNodeAPIConfigurationStatement();
                 }
                 case "getTips": {
                     return getTipsStatement();
@@ -506,7 +505,6 @@ public class API {
      * If an address has a pending transaction, it is also marked as spend.
      * 
      * @param addresses List of addresses to check if they were ever spent from.
-     * @return {@link com.iota.iri.service.dto.wereAddressesSpentFrom}
      **/
     private AbstractResponse wereAddressesSpentFromStatement(List<String> addresses) throws Exception {
         throw new NotImplementedException(NOT_SUPPORTED);
@@ -632,9 +630,6 @@ public class API {
         return GetTrytesResponse.create(elements);
     }
 
-    
-    private static int counterGetTxToApprove = 0;
-    
     /**
      * Can be 0 or more, and is set to 0 every 100 requests.
      * Each increase indicates another 2 tips send.
@@ -652,8 +647,6 @@ public class API {
         counterGetTxToApprove++;
     }
 
-    private static long ellapsedTime_getTxToApprove = 0L;
-    
     /**
      * Can be 0 or more, and is set to 0 every 100 requests.
      * 
@@ -663,15 +656,6 @@ public class API {
         return ellapsedTime_getTxToApprove;
     }
     
-    /**
-     * Increases the current amount of time spent on sending transactions to approve
-     * 
-     * @param ellapsedTime the time to add, in milliseconds
-     */
-    private static void incEllapsedTimeGetTxToApprove(long ellapsedTime) {
-        ellapsedTime_getTxToApprove += ellapsedTime;
-    }
-
     /**
      * <p>
      *     Get the confirmation confidences for a set of transactions.
@@ -779,7 +763,7 @@ public class API {
       * These trytes are returned by <tt>attachToTangle</tt>, or by doing proof of work somewhere else.
       *
       * @param trytes Transaction data to be stored.
-      * @throws Exception When storing or updating a transaction fails
+      * @throws Exception When storing or updating a transaction fails.
       **/
     public void storeTransactionsStatement(List<String> trytes) throws Exception {
         final List<TransactionViewModel> elements = new LinkedList<>();
@@ -795,7 +779,7 @@ public class API {
         for (final TransactionViewModel transactionViewModel : elements) {
             //store transactions
             if(transactionViewModel.store(instance.tangle)) {
-                transactionViewModel.setArrivalTime(System.currentTimeMillis());
+                transactionViewModel.setArrivalTime(System.currentTimeMillis() / 1000L);
                 instance.transactionValidator.updateStatus(transactionViewModel);
                 transactionViewModel.updateSender("local");
                 transactionViewModel.update(instance.tangle, "sender");
@@ -809,18 +793,20 @@ public class API {
       * @return {@link com.iota.iri.service.dto.AbstractResponse.Emptyness}
       **/
     private AbstractResponse interruptAttachingToTangleStatement(){
-        throw new NotImplementedException(NOT_SUPPORTED);
+        pearlDiver.cancel();
+        return AbstractResponse.createEmptyResponse();
     }
 
     /**
-     * Returns information about this node.
-     *
-     * @return {@link com.iota.iri.service.dto.GetNodeInfoResponse}
-     * @throws Exception
-     **/
-    private AbstractResponse getNodeInfoStatement() throws Exception {
+      * Returns information about this node.
+      *
+      * @return {@link com.iota.iri.service.dto.GetNodeInfoResponse}
+      **/
+    private AbstractResponse getNodeInfoStatement(){
         String name = instance.configuration.isTestnet() ? CLIRI.TESTNET_NAME : CLIRI.MAINNET_NAME;
-        return GetNodeInfoResponse.create(name, CLIRI.VERSION,
+        return GetNodeInfoResponse.create(
+                name,
+                IotaUtils.getIriVersion(),
                 Runtime.getRuntime().availableProcessors(),
                 Runtime.getRuntime().freeMemory(), 
                 System.getProperty("java.version"), 
@@ -831,9 +817,17 @@ public class API {
                 System.currentTimeMillis(), 
                 instance.tipsViewModel.size(),
                 instance.transactionRequester.numberOfTransactionsToRequest(),
-                features,
-                instance.lagCalculator.getMedianArrivalLag()
+                features
         );
+    } 
+
+    /**
+     *  Returns information about this node configuration.
+     *
+     * @return {@link GetNodeAPIConfigurationResponse}
+     */
+    private AbstractResponse getNodeAPIConfigurationStatement() {
+        return GetNodeAPIConfigurationResponse.create(instance.configuration);
     }
 
     /**
@@ -1058,8 +1052,6 @@ public class API {
         throw new NotImplementedException(NOT_SUPPORTED);
     }
 
-    private static int counter_PoW = 0;
-    
     /**
      * Can be 0 or more, and is set to 0 every 100 requests.
      * Each increase indicates another 2 tips sent.
@@ -1078,8 +1070,6 @@ public class API {
         API.counter_PoW++;
     }
 
-    private static long ellapsedTime_PoW = 0L;
-    
     /**
      * Can be 0 or more, and is set to 0 every 100 requests.
      * 
@@ -1307,7 +1297,6 @@ public class API {
      * @param trytes The String we validate.
      * @param length The amount of trytes it should contain.
      * @param zeroAllowed If set to '{@value #ZERO_LENGTH_ALLOWED}', an empty string is also valid.
-     * @throws ValidationException If the string is not exactly trytes of <tt>size</tt> length
      * @return <tt>true</tt> if the string is valid, otherwise <tt>false</tt>
      */
     private boolean validTrytes(String trytes, int length, char zeroAllowed) {
@@ -1373,7 +1362,7 @@ public class API {
 
    /**
      * <b>Only available on testnet.</b>
-     * Creates, attaches, and broadcasts a transaction with this message
+     * Creates, attaches, stores, and broadcasts a transaction with this message
      *
      * @param address The address to add the message to
      * @param message The message to store

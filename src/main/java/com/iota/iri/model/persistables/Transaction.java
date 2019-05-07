@@ -9,7 +9,6 @@ import com.iota.iri.utils.Serializer;
 import java.nio.ByteBuffer;
 
 public class Transaction implements Persistable {
-    private static final long serialVersionUID = 113808742723953354L;
     public static final int SIZE = 1604;
 
     /**
@@ -38,7 +37,6 @@ public class Transaction implements Persistable {
     public int validity = 0;
     public int type = TransactionViewModel.PREFILLED_SLOT;
     public long arrivalTime = 0;
-    public long solidificationTime = 0;
 
     //public boolean confirmed = false;
     public boolean parsed = false;
@@ -63,7 +61,7 @@ public class Transaction implements Persistable {
     public byte[] metadata() {
         int allocateSize =
                 Hash.SIZE_IN_BYTES * 6 + //address,bundle,trunk,branch,obsoleteTag,tag
-                        Long.BYTES * 10 + //value,currentIndex,lastIndex,timestamp,attachmentTimestampLowerBound,attachmentTimestampUpperBound,arrivalTime,height,solidificationTime
+                        Long.BYTES * 9 + //value,currentIndex,lastIndex,timestamp,attachmentTimestampLowerBound,attachmentTimestampUpperBound,arrivalTime,height
                         Integer.BYTES * 2 + //validity,type
                         1 + //solid
                         sender.getBytes().length; //sender
@@ -87,7 +85,6 @@ public class Transaction implements Persistable {
         buffer.put(Serializer.serialize(type));
         buffer.put(Serializer.serialize(arrivalTime));
         buffer.put(Serializer.serialize(height));
-        buffer.put(Serializer.serialize(solidificationTime));
         //buffer.put((byte) (confirmed ? 1:0));
 
         // encode booleans in 1 byte
@@ -138,8 +135,6 @@ public class Transaction implements Persistable {
             arrivalTime = Serializer.getLong(bytes, i);
             i += Long.BYTES;
             height = Serializer.getLong(bytes, i);
-            i += Long.BYTES;
-            solidificationTime = Serializer.getLong(bytes, i);
             i += Long.BYTES;
             /*
             confirmed = bytes[i] == 1;

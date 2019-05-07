@@ -7,11 +7,14 @@ import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.network.Node;
 import com.iota.iri.network.TransactionRequester;
 import com.iota.iri.network.UDPReceiver;
+import com.iota.iri.network.impl.TransactionRequesterWorkerImpl;
 import com.iota.iri.network.replicator.Replicator;
-import com.iota.iri.service.TipsSolidifier;
-import com.iota.iri.service.stats.LagCalculator;
-import com.iota.iri.service.stats.TransactionStatsPublisher;
 import com.iota.iri.service.DatabaseRecycler;
+import com.iota.iri.service.TipsSolidifier;
+import com.iota.iri.service.ledger.impl.LedgerServiceImpl;
+import com.iota.iri.service.snapshot.SnapshotException;
+import com.iota.iri.service.snapshot.impl.SnapshotProviderImpl;
+import com.iota.iri.service.stats.TransactionStatsPublisher;
 import com.iota.iri.service.tipselection.*;
 import com.iota.iri.service.tipselection.impl.*;
 import com.iota.iri.storage.*;
@@ -19,12 +22,12 @@ import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
 import com.iota.iri.utils.Pair;
 import com.iota.iri.utils.dag.RecentTransactionsGetter;
 import com.iota.iri.utils.dag.impl.RecentTransactionsGetterImpl;
-import com.iota.iri.zmq.MessageQ;
 
 import java.security.SecureRandom;
-import java.util.List;
 import java.util.Date;
+import java.util.List;
 
+import com.iota.iri.zmq.ZmqMessageQueueProvider;
 import org.apache.commons.lang3.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,7 +66,14 @@ import org.slf4j.LoggerFactory;
 public class Iota {
     private static final Logger log = LoggerFactory.getLogger(Iota.class);
 
-    public final LedgerValidator ledgerValidator;
+    public final SnapshotProviderImpl snapshotProvider;
+
+    public final LedgerServiceImpl ledgerService = new LedgerServiceImpl();
+
+    public final TransactionRequesterWorkerImpl transactionRequesterWorker;
+
+    public final BundleValidator bundleValidator;
+
     public final Tangle tangle;
     public final TransactionValidator transactionValidator;
     public final TipsSolidifier tipsSolidifier;
@@ -74,36 +84,38 @@ public class Iota {
     public final Replicator replicator;
     public final IotaConfig configuration;
     public final TipsViewModel tipsViewModel;
-    public final MessageQ messageQ;
     public final TipSelector tipsSelector;
     public final DatabaseRecycler databaseRecycler;
-    public final LagCalculator lagCalculator;
-
-    public final int lagCalculatorTransactionCount = 100;
 
     /**
-     * Creates all services needed to run an IOTA node.
+     * Initializes the latest snapshot and then creates all services needed to run an IOTA node.
      * 
+     * @throws SnapshotException If the Snapshot fails to initialize.
+     *                           This can happen if the snapshot signature is invalid or the file cannot be read.
      * @param configuration Information about how this node will be configured.
      */
-    public Iota(IotaConfig configuration) {
+    public Iota(IotaConfig configuration) throws SnapshotException {
         this.configuration = configuration;
+
+        // new refactored instances
+        snapshotProvider = new SnapshotProviderImpl();
+        transactionRequesterWorker = new TransactionRequesterWorkerImpl();
+
+        // legacy code
+        bundleValidator = new BundleValidator();
         tangle = new Tangle();
-        messageQ = MessageQ.createWith(configuration);
         tipsViewModel = new TipsViewModel(tangle);
-        transactionRequester = new TransactionRequester(tangle, messageQ);
+        transactionRequester = new TransactionRequester(tangle);
         transactionValidator = new TransactionValidator(tangle, tipsViewModel, transactionRequester);
-        node = new Node(tangle, transactionValidator, transactionRequester, tipsViewModel, messageQ,
-                configuration);
+        node = new Node(tangle, transactionValidator, transactionRequester, tipsViewModel, configuration);
         replicator = new Replicator(node, configuration);
         udpReceiver = new UDPReceiver(node, configuration);
-        ledgerValidator = new LedgerValidatorImpl();
-        tipsSolidifier = new TipsSolidifier(tangle, transactionValidator, tipsViewModel);
+        tipsSolidifier = new TipsSolidifier(tangle, transactionValidator, tipsViewModel, configuration);
         tipsSelector = createTipSelector(configuration);
-        transactionStatsPublisher = new TransactionStatsPublisher(tangle, tipsViewModel, tipsSelector, messageQ);
+        transactionStatsPublisher = new TransactionStatsPublisher(tangle, tipsViewModel, tipsSelector);
         databaseRecycler = new DatabaseRecycler(transactionValidator, transactionRequester, tipsViewModel, tangle);
-        RecentTransactionsGetter recentTransactionsGetter = new RecentTransactionsGetterImpl(tipsViewModel, tangle);
-        lagCalculator = new LagCalculator(lagCalculatorTransactionCount, tangle, recentTransactionsGetter);
+
+        injectDependencies();
     }
 
     /**
@@ -122,9 +134,11 @@ public class Iota {
             rescanDb();
         }
 
-        if (configuration.isZmqEnabled()) {
-            transactionStatsPublisher.init();
+        if (configuration.isRevalidate()) {
+            tangle.clearColumn(com.iota.iri.model.StateDiff.class);
+            tangle.clearMetadata(com.iota.iri.model.persistables.Transaction.class);
         }
+
         transactionValidator.init(configuration.isTestnet(), configuration.getMwm());
         tipsSolidifier.init();
         transactionRequester.init(configuration.getpRemoveRequest());
@@ -132,6 +146,15 @@ public class Iota {
         replicator.init();
         node.init();
         databaseRecycler.init(new Date(System.currentTimeMillis()));
+        transactionRequesterWorker.start();
+    }
+
+    private void injectDependencies() throws SnapshotException {
+        //snapshot provider must be initialized first
+        //because we check whether spent addresses data exists
+        snapshotProvider.init(configuration);
+        ledgerService.init(tangle, snapshotProvider);
+        transactionRequesterWorker.init(tangle, transactionRequester, tipsViewModel, node);
     }
 
     private void rescanDb() throws Exception {
@@ -141,6 +164,7 @@ public class Iota {
         tangle.clearColumn(com.iota.iri.model.persistables.Approvee.class);
         tangle.clearColumn(com.iota.iri.model.persistables.ObsoleteTag.class);
         tangle.clearColumn(com.iota.iri.model.persistables.Tag.class);
+        tangle.clearColumn(com.iota.iri.model.StateDiff.class);
         tangle.clearMetadata(com.iota.iri.model.persistables.Transaction.class);
 
         //rescan all tx & refill the columns
@@ -162,6 +186,8 @@ public class Iota {
      * Exceptions during shutdown are not caught.
      */
     public void shutdown() throws Exception {
+        // shutdown in reverse starting order (to not break any dependencies)
+        transactionRequesterWorker.shutdown();
         transactionStatsPublisher.shutdown();
         tipsSolidifier.shutdown();
         node.shutdown();
@@ -169,7 +195,9 @@ public class Iota {
         replicator.shutdown();
         transactionValidator.shutdown();
         tangle.shutdown();
-        messageQ.shutdown();
+        
+        // free the resources of the snapshot provider last because all other instances need it
+        snapshotProvider.shutdown();
     }
 
     private void initializeTangle() {
@@ -178,7 +206,10 @@ public class Iota {
                 tangle.addPersistenceProvider(new RocksDBPersistenceProvider(
                         configuration.getDbPath(),
                         configuration.getDbLogPath(),
-                        configuration.getDbCacheSize()));
+                        configuration.getDbCacheSize(),
+                        Tangle.COLUMN_FAMILIES,
+                        Tangle.METADATA_COLUMN_FAMILY)
+                );
                 break;
             }
             default: {
@@ -186,19 +217,20 @@ public class Iota {
             }
         }
         if (configuration.isZmqEnabled()) {
-            tangle.addPersistenceProvider(new ZmqPublishProvider(messageQ));
+            tangle.addMessageQueueProvider(new ZmqMessageQueueProvider(configuration));
         }
     }
 
     private TipSelector createTipSelector(TipSelConfig config) {
         RatingCalculator ratingCalculator = new CumulativeWeightCalculator(tangle);
         TailFinder tailFinder = new TailFinderImpl(tangle);
-        Walker walker = new WalkerAlpha(tailFinder, tangle, messageQ, new SecureRandom(), config);
+        Walker walker = new WalkerAlpha(tailFinder, tangle, new SecureRandom());
         RecentTransactionsGetter recentTransactionsGetter = new RecentTransactionsGetterImpl(tipsViewModel, tangle);
         StartingTipSelector startingTipSelector = new ConnectedComponentsStartingTipSelector(tangle, CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE, recentTransactionsGetter);
         EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(
             tangle, CumulativeWeightCalculator.MAX_FUTURE_SET_SIZE, startingTipSelector, tailFinder);
         ReferenceChecker referenceChecker = new ReferenceCheckerImpl(tangle);
-        return new TipSelectorImpl(tangle, ledgerValidator, entryPointSelector, ratingCalculator, walker, referenceChecker);
+        return new TipSelectorImpl(tangle, snapshotProvider, ledgerService, entryPointSelector, ratingCalculator,
+            walker, referenceChecker);
     }
 }

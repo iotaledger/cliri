@@ -1,14 +1,20 @@
 package com.iota.iri.service.tipselection.impl;
 
-import com.iota.iri.conf.MainnetConfig;
 import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.Hash;
 import com.iota.iri.model.HashId;
+import com.iota.iri.service.snapshot.SnapshotProvider;
 import com.iota.iri.service.tipselection.RatingCalculator;
+import com.iota.iri.service.tipselection.TailFinder;
 import com.iota.iri.storage.Tangle;
 import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
 import com.iota.iri.utils.collections.interfaces.UnIterableMap;
-import com.iota.iri.zmq.MessageQ;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Random;
+
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -18,37 +24,41 @@ import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Random;
-
-import static com.iota.iri.controllers.TransactionViewModelTest.*;
+import static com.iota.iri.TransactionTestUtils.getRandomTransactionTrits;
+import static com.iota.iri.TransactionTestUtils.getRandomTransactionHash;
+import static com.iota.iri.TransactionTestUtils.getTransactionWithTrunkAndBranch;
 
 public class WalkerAlphaTest {
     private static final TemporaryFolder dbFolder = new TemporaryFolder();
     private static final TemporaryFolder logFolder = new TemporaryFolder();
     private static Tangle tangle;
+    private static SnapshotProvider snapshotProvider;
     private static WalkerAlpha walker;
     private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     @AfterClass
     public static void tearDown() throws Exception {
         tangle.shutdown();
+        snapshotProvider.shutdown();
         dbFolder.delete();
+        logFolder.delete();
     }
 
     @BeforeClass
     public static void setUp() throws Exception {
         tangle = new Tangle();
+        snapshotProvider = Mockito.mock(SnapshotProvider.class);
         dbFolder.create();
         logFolder.create();
-        tangle.addPersistenceProvider(new RocksDBPersistenceProvider(dbFolder.getRoot().getAbsolutePath(), logFolder
-                .getRoot().getAbsolutePath(), 1000));
+        tangle.addPersistenceProvider( new RocksDBPersistenceProvider(
+                dbFolder.getRoot().getAbsolutePath(), logFolder.getRoot().getAbsolutePath(),1000,
+                Tangle.COLUMN_FAMILIES, Tangle.METADATA_COLUMN_FAMILY));
         tangle.init();
 
-        MessageQ messageQ = Mockito.mock(MessageQ.class);
-        walker = new WalkerAlpha((Optional::of), tangle, messageQ, new Random(1), new MainnetConfig());
+        TailFinder tailFinder = Mockito.mock(TailFinder.class);
+        Mockito.when(tailFinder.findTail(Mockito.any(Hash.class)))
+                .then(args -> Optional.of(args.getArgumentAt(0, Hash.class)));
+        walker = new WalkerAlpha(tailFinder, tangle, new Random(1));
     }
 
 
@@ -57,11 +67,11 @@ public class WalkerAlphaTest {
         //build a small tangle - 1,2,3,4 point to  transaction
         TransactionViewModel transaction, transaction1, transaction2, transaction3, transaction4;
         transaction = new TransactionViewModel(getRandomTransactionTrits(), getRandomTransactionHash());
-        transaction1 = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(transaction.getHash(),
+        transaction1 = new TransactionViewModel(getTransactionWithTrunkAndBranch(transaction.getHash(),
                 transaction.getHash()), getRandomTransactionHash());
-        transaction2 = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(transaction.getHash(),
+        transaction2 = new TransactionViewModel(getTransactionWithTrunkAndBranch(transaction.getHash(),
                 transaction.getHash()), getRandomTransactionHash());
-        transaction3 = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(transaction.getHash(),
+        transaction3 = new TransactionViewModel(getTransactionWithTrunkAndBranch(transaction.getHash(),
                 transaction.getHash()), getRandomTransactionHash());
 
         transaction.store(tangle);
@@ -74,7 +84,7 @@ public class WalkerAlphaTest {
         UnIterableMap<HashId, Integer> rating = ratingCalculator.calculate(transaction.getHash());
 
         //add 4 after the rating was calculated
-        transaction4 = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(transaction.getHash(),
+        transaction4 = new TransactionViewModel(getTransactionWithTrunkAndBranch(transaction.getHash(),
                 transaction.getHash()), getRandomTransactionHash());
         transaction4.store(tangle);
 
@@ -94,11 +104,11 @@ public class WalkerAlphaTest {
         //build a small tangle - 1,2,3,4 point to  transaction
         TransactionViewModel transaction, transaction1, transaction2, transaction3;
         transaction = new TransactionViewModel(getRandomTransactionTrits(), getRandomTransactionHash());
-        transaction1 = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(transaction.getHash(),
+        transaction1 = new TransactionViewModel(getTransactionWithTrunkAndBranch(transaction.getHash(),
                 transaction.getHash()), getRandomTransactionHash());
-        transaction2 = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(transaction.getHash(),
+        transaction2 = new TransactionViewModel(getTransactionWithTrunkAndBranch(transaction.getHash(),
                 transaction.getHash()), getRandomTransactionHash());
-        transaction3 = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(transaction.getHash(),
+        transaction3 = new TransactionViewModel(getTransactionWithTrunkAndBranch(transaction.getHash(),
                 transaction.getHash()), getRandomTransactionHash());
 
         transaction.store(tangle);
@@ -137,11 +147,11 @@ public class WalkerAlphaTest {
         //build a small tangle - 1,2,3,4 point to  transaction
         TransactionViewModel transaction, transaction1, transaction2, transaction3, transaction4;
         transaction = new TransactionViewModel(getRandomTransactionTrits(), getRandomTransactionHash());
-        transaction1 = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(transaction.getHash(),
+        transaction1 = new TransactionViewModel(getTransactionWithTrunkAndBranch(transaction.getHash(),
                 transaction.getHash()), getRandomTransactionHash());
-        transaction2 = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(transaction.getHash(),
+        transaction2 = new TransactionViewModel(getTransactionWithTrunkAndBranch(transaction.getHash(),
                 transaction.getHash()), getRandomTransactionHash());
-        transaction3 = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(transaction.getHash(),
+        transaction3 = new TransactionViewModel(getTransactionWithTrunkAndBranch(transaction.getHash(),
                 transaction.getHash()), getRandomTransactionHash());
 
         transaction.store(tangle);
@@ -151,12 +161,12 @@ public class WalkerAlphaTest {
 
         //calculate rating
         RatingCalculator ratingCalculator = new RatingOne(tangle);
-       UnIterableMap<HashId, Integer> rating = ratingCalculator.calculate(transaction.getHash());
+        UnIterableMap<HashId, Integer> rating = ratingCalculator.calculate(transaction.getHash());
         //set a higher rate for transaction2
         rating.put(transaction2.getHash(), 10);
 
         //add 4 after the rating was calculated
-        transaction4 = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(transaction.getHash(),
+        transaction4 = new TransactionViewModel(getTransactionWithTrunkAndBranch(transaction.getHash(),
                 transaction.getHash()), getRandomTransactionHash());
         transaction4.store(tangle);
 
@@ -184,13 +194,13 @@ public class WalkerAlphaTest {
         //build a small tangle
         TransactionViewModel transaction, transaction1, transaction2, transaction3, transaction4;
         transaction = new TransactionViewModel(getRandomTransactionTrits(), Hash.NULL_HASH);
-        transaction1 = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(transaction.getHash(),
+        transaction1 = new TransactionViewModel(getTransactionWithTrunkAndBranch(transaction.getHash(),
                 transaction.getHash()), getRandomTransactionHash());
-        transaction2 = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(transaction1.getHash(),
+        transaction2 = new TransactionViewModel(getTransactionWithTrunkAndBranch(transaction1.getHash(),
                 transaction1.getHash()), getRandomTransactionHash());
-        transaction3 = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(transaction2.getHash(),
+        transaction3 = new TransactionViewModel(getTransactionWithTrunkAndBranch(transaction2.getHash(),
                 transaction1.getHash()), getRandomTransactionHash());
-        transaction4 = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(transaction2.getHash(),
+        transaction4 = new TransactionViewModel(getTransactionWithTrunkAndBranch(transaction2.getHash(),
                 transaction3.getHash()), getRandomTransactionHash());
         transaction.store(tangle);
         transaction1.store(tangle);
@@ -200,7 +210,7 @@ public class WalkerAlphaTest {
 
         //calculate rating
         RatingCalculator ratingCalculator = new RatingOne(tangle);
-       UnIterableMap<HashId, Integer> rating = ratingCalculator.calculate(transaction.getHash());
+        UnIterableMap<HashId, Integer> rating = ratingCalculator.calculate(transaction.getHash());
 
         //reach the tips
         Hash tip = walker.walk(transaction.getHash(), rating, (o -> true));
@@ -214,11 +224,11 @@ public class WalkerAlphaTest {
         //build a small tangle
         TransactionViewModel transaction, transaction1, transaction2, transaction3;
         transaction = new TransactionViewModel(getRandomTransactionTrits(), getRandomTransactionHash());
-        transaction1 = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(transaction.getHash(),
+        transaction1 = new TransactionViewModel(getTransactionWithTrunkAndBranch(transaction.getHash(),
                 transaction.getHash()), getRandomTransactionHash());
-        transaction2 = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(transaction.getHash(),
+        transaction2 = new TransactionViewModel(getTransactionWithTrunkAndBranch(transaction.getHash(),
                 transaction.getHash()), getRandomTransactionHash());
-        transaction3 = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(transaction1.getHash(),
+        transaction3 = new TransactionViewModel(getTransactionWithTrunkAndBranch(transaction1.getHash(),
                 transaction2.getHash()), getRandomTransactionHash());
         transaction.store(tangle);
         transaction1.store(tangle);
@@ -227,7 +237,7 @@ public class WalkerAlphaTest {
 
         //calculate rating
         RatingCalculator ratingCalculator = new RatingOne(tangle);
-       UnIterableMap<HashId, Integer> rating = ratingCalculator.calculate(transaction.getHash());
+        UnIterableMap<HashId, Integer> rating = ratingCalculator.calculate(transaction.getHash());
 
         //reach the tips
         Hash tip = walker.walk(transaction.getHash(), rating, (o -> true));
@@ -241,13 +251,13 @@ public class WalkerAlphaTest {
         //build a small tangle
         TransactionViewModel transaction, transaction1, transaction2, transaction3, transaction4;
         transaction = new TransactionViewModel(getRandomTransactionTrits(), getRandomTransactionHash());
-        transaction1 = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(
+        transaction1 = new TransactionViewModel(getTransactionWithTrunkAndBranch(
                 transaction.getHash(), transaction.getHash()), getRandomTransactionHash());
-        transaction2 = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(
+        transaction2 = new TransactionViewModel(getTransactionWithTrunkAndBranch(
                 transaction1.getHash(), transaction1.getHash()), getRandomTransactionHash());
-        transaction3 = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(
+        transaction3 = new TransactionViewModel(getTransactionWithTrunkAndBranch(
                 transaction2.getHash(), transaction2.getHash()), getRandomTransactionHash());
-        transaction4 = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(
+        transaction4 = new TransactionViewModel(getTransactionWithTrunkAndBranch(
                 transaction3.getHash(), transaction3.getHash()), getRandomTransactionHash());
         transaction.store(tangle);
         transaction1.store(tangle);
@@ -257,7 +267,7 @@ public class WalkerAlphaTest {
 
         //calculate rating
         RatingCalculator ratingCalculator = new RatingOne(tangle);
-       UnIterableMap<HashId, Integer> rating = ratingCalculator.calculate(transaction.getHash());
+        UnIterableMap<HashId, Integer> rating = ratingCalculator.calculate(transaction.getHash());
 
         //reach the tips
         Hash tip = walker.walk(transaction.getHash(), rating, (o -> true));

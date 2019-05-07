@@ -4,9 +4,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import com.iota.iri.LedgerValidator;
 import com.iota.iri.model.Hash;
 import com.iota.iri.model.HashId;
+import com.iota.iri.service.ledger.LedgerService;
+import com.iota.iri.service.snapshot.SnapshotProvider;
 import com.iota.iri.service.tipselection.EntryPointSelector;
 import com.iota.iri.service.tipselection.RatingCalculator;
 import com.iota.iri.service.tipselection.ReferenceChecker;
@@ -27,10 +28,11 @@ public class TipSelectorImplTest {
     private static final TemporaryFolder logFolder = new TemporaryFolder();
     private static Tangle tangle;
     private static Walker walker;
-    private static LedgerValidator ledgerValidator;
     private static EntryPointSelector entryPointSelector;
     private static RatingCalculator ratingCalculator;
     private static ReferenceChecker referenceChecker;
+    private static SnapshotProvider snapshotProvider;
+    private static LedgerService ledgerService;
 
     @AfterClass
     public static void tearDown() throws Exception {
@@ -44,14 +46,12 @@ public class TipSelectorImplTest {
         tangle = new Tangle();
         dbFolder.create();
         logFolder.create();
-        tangle.addPersistenceProvider(new RocksDBPersistenceProvider(dbFolder.getRoot().getAbsolutePath(), logFolder
-                .getRoot().getAbsolutePath(), 1000));
+        tangle.addPersistenceProvider(new RocksDBPersistenceProvider(
+                dbFolder.getRoot().getAbsolutePath(), logFolder.getRoot().getAbsolutePath(),1000,
+                Tangle.COLUMN_FAMILIES, Tangle.METADATA_COLUMN_FAMILY));
         tangle.init();
 
         walker = Mockito.mock(Walker.class);
-
-        ledgerValidator = Mockito.mock(LedgerValidator.class);
-        Mockito.when(ledgerValidator.checkConsistency(Mockito.anyListOf(Hash.class))).thenReturn(true);
 
         entryPointSelector = Mockito.mock(EntryPointSelector.class);
         Mockito.when(entryPointSelector.getEntryPoint()).thenReturn(Hash.NULL_HASH);
@@ -61,11 +61,15 @@ public class TipSelectorImplTest {
 
         referenceChecker = Mockito.mock(ReferenceChecker.class);
         Mockito.when(referenceChecker.doesReference(Mockito.any(Hash.class), Mockito.any(Hash.class))).thenReturn(true);
+
+        snapshotProvider = Mockito.mock(SnapshotProvider.class);
+        ledgerService = Mockito.mock(LedgerService.class);
     }
 
     @Test
     public void testGetConfidencesReturnsEmptyListWhenGettingEmptyList() throws Exception {
-        TipSelectorImpl tipSelector = new TipSelectorImpl(tangle, ledgerValidator, entryPointSelector, ratingCalculator, walker, referenceChecker);
+        TipSelectorImpl tipSelector = new TipSelectorImpl(tangle, snapshotProvider,
+            ledgerService, entryPointSelector, ratingCalculator, walker, referenceChecker);
 
         List<Hash> inputs = new ArrayList<>();
 
@@ -76,7 +80,8 @@ public class TipSelectorImplTest {
     
     @Test
     public void testGetConfidencesAllOneWhenReferenceAlwaysTrue() throws Exception {
-        TipSelectorImpl tipSelector = new TipSelectorImpl(tangle, ledgerValidator, entryPointSelector, ratingCalculator, walker, referenceChecker);
+        TipSelectorImpl tipSelector = new TipSelectorImpl(tangle, snapshotProvider,
+            ledgerService, entryPointSelector, ratingCalculator, walker, referenceChecker);
 
         List<Hash> inputs = Collections.nCopies(3, Hash.NULL_HASH);
 
@@ -90,7 +95,8 @@ public class TipSelectorImplTest {
 
     @Test
     public void testGetConfidencesOverHalfWhenOnlyThreeTipsDontReference() throws Exception {
-        TipSelectorImpl tipSelector = new TipSelectorImpl(tangle, ledgerValidator, entryPointSelector, ratingCalculator, walker, referenceChecker);
+        TipSelectorImpl tipSelector = new TipSelectorImpl(tangle, snapshotProvider,
+            ledgerService, entryPointSelector, ratingCalculator, walker, referenceChecker);
 
         List<Hash> inputs = Collections.nCopies(1, Hash.NULL_HASH);
         // Returns false the first three times and then true for all consecutive calls

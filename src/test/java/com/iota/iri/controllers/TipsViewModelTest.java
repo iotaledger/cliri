@@ -31,8 +31,9 @@ public class TipsViewModelTest {
         tangle = new Tangle();
         dbFolder.create();
         logFolder.create();
-        tangle.addPersistenceProvider(new RocksDBPersistenceProvider(dbFolder.getRoot().getAbsolutePath(), logFolder
-                .getRoot().getAbsolutePath(), 1000));
+        tangle.addPersistenceProvider(new RocksDBPersistenceProvider(
+                dbFolder.getRoot().getAbsolutePath(), logFolder.getRoot().getAbsolutePath(),1000,
+                Tangle.COLUMN_FAMILIES, Tangle.METADATA_COLUMN_FAMILY));
         tangle.init();
     }
 
@@ -156,7 +157,22 @@ public class TipsViewModelTest {
     } 
 
     @Test
-    public void solidTipsPopulatedWhenEmpty() throws Exception {
+    public void solidTipsPopulatedWithGenesisForEmptyTangle() throws Exception {
+        TipsViewModel tipsVM = new TipsViewModel(tangle);
+
+        List<Hash> solidTips = tipsVM.getLatestSolidTips(1);
+        TransactionViewModel genesis = new TransactionViewModel(
+            getRandomTransactionWithTrunkAndBranch(Hash.NULL_HASH, Hash.NULL_HASH), Hash.NULL_HASH);
+
+        genesis.updateSolid(true);
+        genesis.store(tangle);
+
+        assertNotNull(solidTips);
+        assertEquals(Hash.NULL_HASH, solidTips.get(0));
+    }
+
+    @Test
+    public void solidTipsPopulatedWhenSetIsEmpty() throws Exception {
         final int tipCount = 10;
         Set<Hash> tips = new HashSet<>();
 

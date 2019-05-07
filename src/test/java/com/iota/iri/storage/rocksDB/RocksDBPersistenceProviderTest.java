@@ -1,6 +1,5 @@
 package com.iota.iri.storage.rocksDB;
 
-import com.iota.iri.controllers.TransactionViewModel;
 import com.iota.iri.model.IntegerIndex;
 import com.iota.iri.model.persistables.Transaction;
 import com.iota.iri.storage.Indexable;
@@ -13,7 +12,6 @@ import org.junit.runners.MethodSorters;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -25,8 +23,9 @@ public class RocksDBPersistenceProviderTest {
     private static String dbPath = "tmpdb", dbLogPath = "tmplogs";
 
     @BeforeClass
-    public static void setUpDb() {
-        rocksDBPersistenceProvider = new RocksDBPersistenceProvider(dbPath, dbLogPath, 10000);
+    public static void setUpDb() throws Exception {
+        rocksDBPersistenceProvider =  new RocksDBPersistenceProvider(
+               dbPath, dbLogPath,1000, Tangle.COLUMN_FAMILIES, Tangle.METADATA_COLUMN_FAMILY);
         rocksDBPersistenceProvider.init();
     }
 
@@ -43,7 +42,6 @@ public class RocksDBPersistenceProviderTest {
         rocksDBPersistenceProvider.clear(Transaction.class);
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     public void testDeleteBatch() throws Exception {
         Persistable tx = new Transaction();

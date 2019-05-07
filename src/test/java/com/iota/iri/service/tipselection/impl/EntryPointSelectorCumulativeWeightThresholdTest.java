@@ -49,8 +49,9 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
         tangle = new Tangle();
         dbFolder.create();
         logFolder.create();
-        tangle.addPersistenceProvider(new RocksDBPersistenceProvider(dbFolder.getRoot().getAbsolutePath(),
-                logFolder.getRoot().getAbsolutePath(), 1000));
+        tangle.addPersistenceProvider(new RocksDBPersistenceProvider(
+                dbFolder.getRoot().getAbsolutePath(), logFolder.getRoot().getAbsolutePath(),1000,
+                Tangle.COLUMN_FAMILIES, Tangle.METADATA_COLUMN_FAMILY));
         tangle.init();
 
         startingTipSelector = Mockito.mock(StartingTipSelector.class);
@@ -80,17 +81,32 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
 
     @Test
     public void returnsCorrectTxInChain() throws Exception {
-        final int threshold = 100;
-        List<Hash> chain = makeChain(threshold * 5);
+        final int threshold = 5;
+        final int chainLength = 30;
+        final int expectedEntrypoint = chainLength - 7;
+        
+        List<TransactionViewModel> transactions = new ArrayList<TransactionViewModel>();
 
-        // getTip returns genesis
-        Mockito.when(startingTipSelector.getTip()).thenReturn(chain.get(chain.size() - 1));
+        transactions.add(new TransactionViewModel(getRandomTransactionTrits(), getRandomTransactionHash()));
 
-        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, threshold, startingTipSelector, tailFinder);
+        for (int i = 0; i < chainLength; i++) {
+            Hash prevTxHash = transactions.get(transactions.size() - 1).getHash();
+            transactions.add(new TransactionViewModel(
+                getRandomTransactionWithTrunkAndBranch(prevTxHash, prevTxHash), getRandomTransactionHash()));
+        }
 
-        Hash entryPoint = entryPointSelector.getEntryPoint(); 
+        for (TransactionViewModel transaction : transactions) {
+            transaction.store(tangle);
+        }
 
-        Assert.assertEquals(chain.get(chain.size() - threshold), entryPoint);
+        Mockito.when(startingTipSelector.getTip()).thenReturn(transactions.get(transactions.size() - 1).getHash());
+        
+        EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, threshold,
+            startingTipSelector, tailFinder);
+        Hash entryPoint = entryPointSelector.getEntryPoint();
+
+        Assert.assertNotEquals(Hash.NULL_HASH, entryPoint);
+        Assert.assertEquals(transactions.get(expectedEntrypoint).getHash(), entryPoint);
     }
 
     @Test
@@ -98,7 +114,7 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
         final int threshold = 15;
         final int stalkLevels = 15;
         final int txPerLevel = 5;
-        final int expectedStalkLevel = stalkLevels - 3;
+        final int expectedStalkLevel = stalkLevels - 4;
         
         List<TransactionViewModel> mainStalk = new ArrayList<TransactionViewModel>();
 
@@ -215,7 +231,7 @@ public class EntryPointSelectorCumulativeWeightThresholdTest {
 
         exception.expect(NoSuchElementException.class);
         EntryPointSelector entryPointSelector = new EntryPointSelectorCumulativeWeightThreshold(tangle, threshold, startingTipSelector, tailFinder);
-        entryPointSelector.getEntryPoint();
+        entryPointSelector.getEntryPoint(); 
     }
 
     private List<Hash> makeChain(int length) throws Exception {

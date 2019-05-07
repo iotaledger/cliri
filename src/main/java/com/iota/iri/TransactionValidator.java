@@ -444,7 +444,9 @@ public class TransactionValidator {
             return true;
         }
         if(approovee.getType() == PREFILLED_SLOT) {
-            transactionRequester.requestTransaction(approovee.getHash());
+            // don't solidify from the bottom until cuckoo filters can identify where we deleted -> otherwise we will
+            // continue requesting old transactions forever
+            //transactionRequester.requestTransaction(approovee.getHash(), false);
             return false;
         }
         return approovee.isSolid();

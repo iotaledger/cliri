@@ -42,8 +42,9 @@ public class ConnectedComponentsStartingTipSelectorTest {
         tangle = new Tangle();
         dbFolder.create();
         logFolder.create();
-        tangle.addPersistenceProvider(new RocksDBPersistenceProvider(dbFolder.getRoot().getAbsolutePath(),
-                logFolder.getRoot().getAbsolutePath(), 1000));
+        tangle.addPersistenceProvider(new RocksDBPersistenceProvider(
+                dbFolder.getRoot().getAbsolutePath(), logFolder.getRoot().getAbsolutePath(),1000,
+                Tangle.COLUMN_FAMILIES, Tangle.METADATA_COLUMN_FAMILY));
         tangle.init();
 
         recentTransactionsGetter = Mockito.mock(RecentTransactionsGetter.class);
@@ -60,7 +61,6 @@ public class ConnectedComponentsStartingTipSelectorTest {
         bigChainTips.add(bigChainTransactions.get(bigChainTransactions.size() - 1));
 
         List<Hash> smallChainTransactions = makeChain(chainLength, getRandomTransactionHash());
-        Hash smallChainTip = smallChainTransactions.get(smallChainTransactions.size() - 1);
 
         List<Hash> allTx = new ArrayList<>();
         allTx.addAll(bigChainTransactions);
