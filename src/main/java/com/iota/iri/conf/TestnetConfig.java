@@ -3,11 +3,17 @@ package com.iota.iri.conf;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.iota.iri.crypto.SpongeFactory;
+import com.iota.iri.model.Hash;
+import com.iota.iri.model.HashFactory;
 
 import java.util.Objects;
 
 public class TestnetConfig extends BaseIotaConfig {
 
+    protected String snapshotFile = Defaults.SNAPSHOT_FILE;
+    protected String snapshotSignatureFile = Defaults.SNAPSHOT_SIG;
+    protected long snapshotTime = Defaults.SNAPSHOT_TIME;
     protected int mwm = Defaults.MWM;
     protected int transactionPacketSize = Defaults.PACKET_SIZE;
     protected int requestHashSize = Defaults.REQUEST_HASH_SIZE;
@@ -16,11 +22,45 @@ public class TestnetConfig extends BaseIotaConfig {
         super();
         dbPath = Defaults.DB_PATH;
         dbLogPath = Defaults.DB_LOG_PATH;
+        localSnapshotsBasePath = Defaults.LOCAL_SNAPSHOTS_BASE_PATH;
     }
 
     @Override
     public boolean isTestnet() {
         return true;
+    }
+
+    @Override
+    public String getSnapshotFile() {
+        return snapshotFile;
+    }
+
+    @JsonProperty
+    @Parameter(names = "--snapshot", description = SnapshotConfig.Descriptions.SNAPSHOT_FILE)
+    protected void setSnapshotFile(String snapshotFile) {
+        this.snapshotFile = snapshotFile;
+    }
+
+    @Override
+    public String getSnapshotSignatureFile() {
+        return snapshotSignatureFile;
+    }
+
+    @JsonProperty
+    @Parameter(names = "--snapshot-sig", description = SnapshotConfig.Descriptions.SNAPSHOT_SIGNATURE_FILE)
+    protected void setSnapshotSignatureFile(String snapshotSignatureFile) {
+        this.snapshotSignatureFile = snapshotSignatureFile;
+    }
+
+    @Override
+    public long getSnapshotTime() {
+        return snapshotTime;
+    }
+
+    @JsonProperty
+    @Parameter(names = "--snapshot-timestamp", description = SnapshotConfig.Descriptions.SNAPSHOT_TIME)
+    protected void setSnapshotTime(long snapshotTime) {
+        this.snapshotTime = snapshotTime;
     }
 
     @Override
@@ -75,10 +115,15 @@ public class TestnetConfig extends BaseIotaConfig {
     }
 
     public interface Defaults {
+        String LOCAL_SNAPSHOTS_BASE_PATH = "testnet";
+        String SNAPSHOT_FILE = "/snapshotTestnet.txt";
         int REQUEST_HASH_SIZE = 49;
+        String SNAPSHOT_SIG = "/snapshotTestnet.sig";
+        int SNAPSHOT_TIME = 1522306500;
         int MWM = 9;
         int PACKET_SIZE = 1653;
         String DB_PATH = "testnetdb";
         String DB_LOG_PATH = "testnetdb.log";
+
     }
 }

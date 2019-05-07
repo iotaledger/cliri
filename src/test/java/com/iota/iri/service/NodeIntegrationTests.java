@@ -2,8 +2,10 @@ package com.iota.iri.service;
 
 import com.iota.iri.IXI;
 import com.iota.iri.Iota;
-import com.iota.iri.conf.IXIConfig;
-import com.iota.iri.conf.TestnetConfig;
+
+import static com.iota.iri.controllers.TransactionViewModel.*;
+
+import com.iota.iri.conf.*;
 import com.iota.iri.crypto.Curl;
 import com.iota.iri.crypto.Sponge;
 import com.iota.iri.crypto.SpongeFactory;
@@ -14,11 +16,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.rules.TemporaryFolder;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static com.iota.iri.controllers.TransactionViewModel.*;
 
 public class NodeIntegrationTests {
 

@@ -1,8 +1,9 @@
 package com.iota.iri.service.tipselection.impl;
 
-import com.iota.iri.LedgerValidator;
 import com.iota.iri.model.Hash;
 import com.iota.iri.model.HashId;
+import com.iota.iri.service.ledger.LedgerService;
+import com.iota.iri.service.snapshot.SnapshotProvider;
 import com.iota.iri.service.tipselection.*;
 import com.iota.iri.storage.Tangle;
 import com.iota.iri.utils.collections.interfaces.UnIterableMap;
@@ -28,12 +29,25 @@ public class TipSelectorImpl implements TipSelector {
     private final RatingCalculator ratingCalculator;
     private final Walker walker;
 
-    private final LedgerValidator ledgerValidator;
+    private final LedgerService ledgerService;
     private final Tangle tangle;
     private final ReferenceChecker referenceChecker;
 
+    /**
+     * Constructor for Tip Selector.
+     *
+     * @param tangle Tangle object which acts as a database interface.
+     * @param snapshotProvider allows access to snapshots of the ledger state
+     * @param ledgerService used by walk validator to check ledger consistency.
+     * @param entryPointSelector instance of the entry point selector to get tip selection starting points.
+     * @param ratingCalculator instance of rating calculator, to calculate weighted walks.
+     * @param walkerAlpha instance of walker (alpha), to perform weighted random walks as per the IOTA white paper.
+     * @param referenceChecker instance of reference checker, for getConfidences
+     * @param config configurations to set internal parameters.
+     */
     public TipSelectorImpl(Tangle tangle,
-                           LedgerValidator ledgerValidator,
+                           SnapshotProvider snapshotProvider,
+                           LedgerService ledgerService,
                            EntryPointSelector entryPointSelector,
                            RatingCalculator ratingCalculator,
                            Walker walkerAlpha,
@@ -45,12 +59,14 @@ public class TipSelectorImpl implements TipSelector {
         this.walker = walkerAlpha;
 
         //used by walkValidator
-        this.ledgerValidator = ledgerValidator;
+        this.ledgerService = ledgerService;
         this.tangle = tangle;
         this.referenceChecker = referenceChecker;
     }
 
     /**
+     * {@inheritDoc}
+     *
      * Implementation of getTransactionsToApprove
      *
      * General process:
@@ -67,14 +83,13 @@ public class TipSelectorImpl implements TipSelector {
      */
     @Override
     public List<Hash> getTransactionsToApprove(Optional<Hash> reference) throws Exception {
-
-        //preparation
+        // preparation
         Hash entryPoint = entryPointSelector.getEntryPoint();
         UnIterableMap<HashId, Integer> rating = ratingCalculator.calculate(entryPoint);
 
-        //random walk
+        // random walk
         List<Hash> tips = new LinkedList<>();
-        WalkValidator walkValidator = new WalkValidatorImpl(tangle, ledgerValidator);
+        WalkValidator walkValidator = new WalkValidatorImpl(tangle, ledgerService);
         Hash tip = walker.walk(entryPoint, rating, walkValidator);
         tips.add(tip);
 
@@ -83,12 +98,13 @@ public class TipSelectorImpl implements TipSelector {
             entryPoint = reference.get();
         }
 
-        //passing the same walkValidator means that the walks will be consistent with each other
+        // passing the same walkValidator means that the walks will be consistent with
+        // each other
         tip = walker.walk(entryPoint, rating, walkValidator);
         tips.add(tip);
 
-        //validate
-        if (!ledgerValidator.checkConsistency(tips)) {
+        // validate
+        if (!ledgerService.tipsConsistent(tips)) {
             throw new IllegalStateException(TIPS_NOT_CONSISTENT);
         }
 
@@ -109,7 +125,7 @@ public class TipSelectorImpl implements TipSelector {
 
         List<Hash> tips = new ArrayList<>();
         for (int i = 0; i < NUMBER_OF_TIPS_IN_GET_CONFIDENCES; i++) {
-            WalkValidator walkValidator = new WalkValidatorImpl(tangle, ledgerValidator);
+            WalkValidator walkValidator = new WalkValidatorImpl(tangle, ledgerService);
             Hash tip = walker.walk(entryPoint, rating, walkValidator);
             tips.add(tip);
         }

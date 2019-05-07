@@ -2,6 +2,7 @@ package com.iota.iri;
 
 import com.iota.iri.crypto.SpongeFactory;
 import com.iota.iri.model.TransactionHash;
+import com.iota.iri.service.snapshot.SnapshotProvider;
 import com.iota.iri.storage.Tangle;
 import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
 import com.iota.iri.utils.Converter;
@@ -10,6 +11,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.mockito.Mockito;
 
 import java.util.Arrays;
 import java.util.List;
@@ -17,6 +19,7 @@ import java.util.stream.Collectors;
 
 public class BundleValidatorTest {
     private static Tangle tangle = new Tangle();
+    private static SnapshotProvider snapshotProvider;
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -24,13 +27,18 @@ public class BundleValidatorTest {
         TemporaryFolder logFolder = new TemporaryFolder();
         dbFolder.create();
         logFolder.create();
-        tangle.addPersistenceProvider(new RocksDBPersistenceProvider(dbFolder.getRoot().getAbsolutePath(), logFolder.getRoot().getAbsolutePath(),1000));
+        tangle.addPersistenceProvider(
+                new RocksDBPersistenceProvider(dbFolder.getRoot().getAbsolutePath(),
+                        logFolder.getRoot().getAbsolutePath(), 1000, Tangle.COLUMN_FAMILIES,
+                        Tangle.METADATA_COLUMN_FAMILY));
         tangle.init();
+        snapshotProvider = Mockito.mock(SnapshotProvider.class);
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
         tangle.shutdown();
+        snapshotProvider.shutdown();
     }
 
     @Test

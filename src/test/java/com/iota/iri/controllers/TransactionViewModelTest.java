@@ -5,7 +5,6 @@ import com.iota.iri.crypto.SpongeFactory;
 import com.iota.iri.model.Hash;
 import com.iota.iri.model.HashFactory;
 import com.iota.iri.model.TransactionHash;
-import com.iota.iri.model.persistables.Transaction;
 import com.iota.iri.storage.Tangle;
 import com.iota.iri.storage.rocksDB.RocksDBPersistenceProvider;
 import com.iota.iri.utils.Converter;
@@ -38,8 +37,9 @@ public class TransactionViewModelTest {
         dbFolder.create();
         logFolder.create();
         RocksDBPersistenceProvider rocksDBPersistenceProvider;
-        rocksDBPersistenceProvider = new RocksDBPersistenceProvider(dbFolder.getRoot().getAbsolutePath(),
-                logFolder.getRoot().getAbsolutePath(),1000);
+        rocksDBPersistenceProvider =  new RocksDBPersistenceProvider(
+                dbFolder.getRoot().getAbsolutePath(), logFolder.getRoot().getAbsolutePath(),1000,
+                Tangle.COLUMN_FAMILIES, Tangle.METADATA_COLUMN_FAMILY);
         tangle.addPersistenceProvider(rocksDBPersistenceProvider);
         tangle.init();
     }
@@ -283,30 +283,6 @@ public class TransactionViewModelTest {
     }
 
     @Test
-    public void solidificationTimestampSetWhenCallingUpdateSolid() throws Exception {
-        TransactionViewModel tvm = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(Hash.NULL_HASH,
-                Hash.NULL_HASH), getRandomTransactionHash());
-
-        long now = System.currentTimeMillis();
-        tvm.updateSolid(true);
-
-        long timeDifference = Math.abs(tvm.getSolidificationTime() - now);
-        log.info("timeDifference", timeDifference);
-
-        assertTrue(timeDifference < 10);
-    }
-
-    @Test
-    public void solidificationTimestampNotSetWhenCallingUpdateSolidWithFalse() throws Exception {
-        TransactionViewModel tvm = new TransactionViewModel(getRandomTransactionWithTrunkAndBranch(Hash.NULL_HASH,
-                Hash.NULL_HASH), getRandomTransactionHash());
-
-        tvm.updateSolid(false);
-
-        assertEquals(0, tvm.getSolidificationTime());
-    }
-
-    @Test
     public void updateHeightShouldWork() throws Exception {
         int count = 4;
         TransactionViewModel[] transactionViewModels = new TransactionViewModel[count];
@@ -421,18 +397,6 @@ public class TransactionViewModelTest {
         log.info("Done. #TX: {}", TransactionViewModel.getNumberOfStoredTransactions(tangle));
     }
 
-    private Transaction getRandomTransaction(Random seed) {
-        Transaction transaction = new Transaction();
-
-        byte[] trits = new byte[TransactionViewModel.SIGNATURE_MESSAGE_FRAGMENT_TRINARY_SIZE];
-        for(int i = 0; i < trits.length; i++) {
-            trits[i] = (byte) (seed.nextInt(3) - 1);
-        }
-
-        transaction.bytes = Converter.allocateBytesForTrits(trits.length);
-        Converter.bytes(trits, 0, transaction.bytes, 0, trits.length);
-        return transaction;
-    }
     public static byte[] getRandomTransactionWithTrunkAndBranch(Hash trunk, Hash branch) {
         byte[] trits = getRandomTransactionTrits();
         System.arraycopy(trunk.trits(), 0, trits, TransactionViewModel.TRUNK_TRANSACTION_TRINARY_OFFSET,

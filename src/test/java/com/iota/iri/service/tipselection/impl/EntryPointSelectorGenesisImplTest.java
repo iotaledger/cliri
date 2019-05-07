@@ -13,6 +13,6 @@ public class EntryPointSelectorGenesisImplTest {
         EntryPointSelector entryPointSelector = new EntryPointSelectorGenesisImpl();
         Hash entryPoint = entryPointSelector.getEntryPoint();
 
-        Assert.assertEquals("The entry point should be the milestone in the Tangle", Hash.NULL_HASH, entryPoint);
+        Assert.assertEquals(Hash.NULL_HASH, entryPoint);
     }
 }

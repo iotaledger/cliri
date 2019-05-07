@@ -1,5 +1,8 @@
 package com.iota.iri.conf;
 
+import com.iota.iri.model.Hash;
+import com.iota.iri.model.HashFactory;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -11,6 +14,7 @@ import java.io.IOException;
 import java.util.Properties;
 
 import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 /**
@@ -130,8 +134,8 @@ public class ConfigFactoryTest {
         properties.setProperty("TESTNET", testnet);
         properties.setProperty("ZMQ_ENABLED", " TRUE ");
         properties.setProperty("MWM", "9");
-        properties.setProperty("MILESTONE_START_INDEX", "2 ");
-        properties.setProperty("KEYS_IN_MILESTONE", "10");
+        properties.setProperty("SNAPSHOT_FILE", "conf/snapshot.txt");
+        properties.setProperty("MAX_DEPTH", "1000");
 
         File configFile = folder.newFile("myCustomIotaConfig.ini");
         FileOutputStream fileOutputStream = new FileOutputStream(configFile);

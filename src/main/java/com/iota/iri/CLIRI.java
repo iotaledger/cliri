@@ -5,6 +5,7 @@ import com.iota.iri.conf.Config;
 import com.iota.iri.conf.ConfigFactory;
 import com.iota.iri.conf.IotaConfig;
 import com.iota.iri.service.API;
+import com.iota.iri.utils.IotaUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,12 +15,13 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * 
- * Main IOTA Reference Implementation (CLIRI) starting class.
+ * Main Coo-less IOTA Reference Implementation (CLIRI) starting class.
  * <p>
  *     The CLIRI software enables the Tangle to operate. Individuals can run CLIRI to operates Nodes.
  *     The Node running the CLIRI software enables your device to communicate with neighbors
@@ -31,7 +33,6 @@ import org.slf4j.LoggerFactory;
  *     <ul>
  *         <li>Receiving and broadcasting transactions through TCP and UDP.</li>
  *         <li>Handling of HTTP requests from clients.</li>
- *         <li>Tracking and validating Milestones.</li>
  *         <li>Loading custom modules that extend the API.</li>
  *     </ul>
  * </p>
@@ -42,7 +43,6 @@ public class CLIRI {
 
     public static final String MAINNET_NAME = "CLIRI";
     public static final String TESTNET_NAME = "CLIRI Testnet";
-    public static final String VERSION = "0.2.1";
 
     /**
      * The entry point of CLIRI.
@@ -60,6 +60,12 @@ public class CLIRI {
         CLIRILauncher.main(args);
     }
 
+    /**
+     * Reads the logging configuration file and logging level from system properties. You can set this values as
+     * arguments to the Java VM by passing <code>-Dlogback.configurationFile=/path/to/config.xml -Dlogging-level=DEBUG</code>
+     * to the Java VM. If no system properties are specified the logback default values and logging-level INFO will
+     * be used.
+     */
     private static void configureLogging() {
         String config = System.getProperty("logback.configurationFile");
         String level = System.getProperty("logging-level", "").toUpperCase();
@@ -108,7 +114,8 @@ public class CLIRI {
          */
         public static void main(String [] args) throws Exception {
             IotaConfig config = createConfiguration(args);
-            log.info("Welcome to {} {}", config.isTestnet() ? TESTNET_NAME : MAINNET_NAME, VERSION);
+            String version = IotaUtils.getIriVersion();
+            log.info("Welcome to {} {}", config.isTestnet() ? TESTNET_NAME : MAINNET_NAME, version);
 
             iota = new Iota(config);
             ixi = new IXI(iota);
@@ -148,7 +155,7 @@ public class CLIRI {
             IotaConfig iotaConfig = null;
             String message = "Configuration is created using ";
             try {
-                boolean testnet = ArrayUtils.contains(args, Config.TESTNET_FLAG);
+                boolean testnet = isTestnet(args);
                 File configFile = chooseConfigFile(args);
                 if (configFile != null) {
                     iotaConfig = ConfigFactory.createFromFile(configFile, testnet);
@@ -178,6 +185,31 @@ public class CLIRI {
             return iotaConfig;
         }
 
+        /**
+         * We are connected to testnet when {@link Config#TESTNET_FLAG} is passed in program startup,
+         * following with <code>true</code>
+         * 
+         * @param args the list of program startup arguments
+         * @return <code>true</code> if this is testnet, otherwise <code>false</code>
+         */
+        private static boolean isTestnet(String[] args) {
+            int index = ArrayUtils.indexOf(args, Config.TESTNET_FLAG);
+            if (index != -1 && args.length > index+1) {
+                Boolean bool = BooleanUtils.toBooleanObject(args[index+1]);
+                return bool == null ? false : bool;
+            }
+            
+            return false;
+        }
+
+        /**
+         * Parses the command line arguments for a config file that can be provided by parameter <code>-c</code>
+         * or parameter <code>--config</code>. If no filename was provided we fall back to <code>iota.ini</code> file.
+         * If no <code>iota.ini</code> file can be found return null.
+         *
+         * @param args command line arguments passed to main method.
+         * @return File the chosen file to use as config, or null.
+         */
         private static File chooseConfigFile(String[] args) {
             int index = Math.max(ArrayUtils.indexOf(args, "-c"), ArrayUtils.indexOf(args, "--config"));
             if (index != -1) {
